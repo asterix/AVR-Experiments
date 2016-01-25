@@ -35,7 +35,7 @@ enum
 };
 
 /* Globals */
-unsigned int tcounter = 0, button_a = 1, button_c = 0;
+unsigned int tcounter = 0, button_a = 0, button_c = 0;
 unsigned char button_a_stat = LOW, button_c_stat = HIGH;
 
 /* Timer 1 setup */
@@ -60,7 +60,7 @@ int setup_autoreload_timer1(unsigned long int delay)
       /* Interrupts for Timer 1 */
       TIMSK1 |= (1 << OCIE1A);
 
-      /* Select clock source - TIMER START */
+      /* Select clock source = prescaler 64 - TIMER START */
       TCCR1B |= ((1 << CS10) | (1 << CS11));
    }
 
@@ -77,8 +77,9 @@ ISR(TIMER1_COMPA_vect)
    {
       case 0:
       {
-         /* ON */
-         PORTD |= (1 << LED_GREEN);
+         /* Green LED is pulled high, so the pin acts as a current sink */
+         /* Low turns ON green LED */
+         PORTD &= ~(1 << LED_GREEN);
          break;
       }
       case 1:
@@ -89,8 +90,8 @@ ISR(TIMER1_COMPA_vect)
       }
       case 2:
       {
-         /* OFF */
-         PORTD &= ~(1 << LED_GREEN);
+         /* High turns OFF green LED */
+         PORTD |= (1 << LED_GREEN);
          break;
       }
       default:
