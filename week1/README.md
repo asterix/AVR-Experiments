@@ -1,4 +1,5 @@
-== Problem ==
+Problem
+=====
 
 Push buttons to modify LED functionality.
 	Toggle means to change from one state to another (if ON, turn OFF;  if OFF, turn ON)
@@ -17,7 +18,8 @@ LED Toggle Rate:
 GREEN LED, blink at 2 Hz (ON at 250 ms, OFF at 500 ms, ON at 750 ms, OFF at 1 sec, ...)
 YELLOW LED, blink at .4 Hz (ON at 1250 ms, OFF at 2500 ms, … ).
 
-== Solution Comments ==
+Solution Comments
+=====
 
 
 
