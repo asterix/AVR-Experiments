@@ -21,8 +21,8 @@ YELLOW LED, blink at .4 Hz (ON at 1250 ms, OFF at 2500 ms, … ).
 Solution Comments
 =====
 
-* - Implemented delays using TIMER-1 (16 bit) in CTC auto reload mode.*
-* - Implemented interrupts on TIMER-1 Compare with TOP count (delay).*
-* - Implemented BUTTON-A and BUTTON-C input capture using I/O polling.*
-* - Implemented LED modes' switching in TIMER-1 ISR based on global modes.*
+* *Implemented delays using TIMER-1 (16 bit) in CTC auto reload mode.*
+* *Implemented interrupts on TIMER-1 Compare with TOP count (delay).*
+* *Implemented BUTTON-A and BUTTON-C input capture using I/O polling.*
+* *Implemented LED modes' switching in TIMER-1 ISR based on global modes.*
 
