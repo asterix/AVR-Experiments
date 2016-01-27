@@ -1,28 +1,28 @@
 Problem
-=====
+========
 
-Push buttons to modify LED functionality.
-	Toggle means to change from one state to another (if ON, turn OFF;  if OFF, turn ON)
-	Blink means to turn ON then turn OFF
+Blink an LED (plugged into general I/O) using the main loop at a rate of .5 Hz. 
+ISR based on button A. If button A is pushed, then blink a different LED (general I/O) 10 times on/off with an empty for-loop for delay (time it for about 4 Hz). This happens inside the ISR.
+Create rudimentary menu that changes which color is blinking (or port) at 4 Hz.
 
-You may use the Arduino IDE or gcc or Atmel Studio. 
+If you have not previously programmed interrupts and are not familiar with microprocessors, this assignment will take some time. Expectations are that you can get the framework in place, but you might not get it functional (there are a lot of details to work out).
 
-BUTTONS: careful of “bounce”
-	Button A: Green
-	Button C: Yellow
-	1st press: LED ON (solidly, no blinking)
-	2nd press: LED Blink at rate provided below
-	3rd press: LED OFF
-
-LED Toggle Rate:
-GREEN LED, blink at 2 Hz (ON at 250 ms, OFF at 500 ms, ON at 750 ms, OFF at 1 sec, ...)
-YELLOW LED, blink at .4 Hz (ON at 1250 ms, OFF at 2500 ms, … ).
+DETAILS to watch for:
+==
+* Button A is on port B, pin 3. This is connected to the PCINT3 - pin change interrupt pin 3. (I found this by looking at the Pololu schematics then the Atmel Pinout.)
+* To enable this interrupt, which is PCINT0, you have to set the right bits in 
+    - PCICR: Pin Change Interrupt Control Register 
+    - SREG: Status Register
+    - PCMSK0: Pin Change Mask for PCINT0.
+    NOTE: PCINT3 is one of 7 pins that can trigger the PCINT0 interrupt. These are poorly named, so don’t confuse the pin with the interrupt port.
+* Write an ISR for PCINT0. You should check that it was the PCINT3 pin that had a pin change and fired the interrupt and think about how to deal with bounce.
+    - Current theory is that you can write this with ISR(PCINT0_vect) { … }. Include avr/io.h and avr/interrupt.h.
+    - Manage when interrupts are enabled and disabled with sei and cli.
+    - You might have to disable some of Pololu’s ISRs to get this one to work.
 
 Solution Comments
 =====
 
-* *Implemented delays using TIMER-1 (16 bit) in CTC auto reload mode.*
-* *Implemented interrupts on TIMER-1 Compare with TOP count (delay).*
-* *Implemented BUTTON-A and BUTTON-C input capture using I/O polling.*
-* *Implemented LED modes' switching in TIMER-1 ISR based on global modes.*
+* *Implemented Pin Change Interrupts for Buttons A and C*
+* *Replaced polling with interrupts.*
 
