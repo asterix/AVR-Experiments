@@ -310,15 +310,15 @@ ISR(PCINT0_vect)
          /* Blink 10 times - 4Hz */
          handle_blinking(0);
          
-         /* 125ms = 31*255*250 + 31*255*5 cycles @ 16MHz */
+         /* 125ms = 6(1+255(1+(255*5))) cycles @ 16MHz */
          //_delay_ms(125);
-         for(i = 0; i < 31; i++)
+         for(i = 0; i < 6; i++)
          {
             volatile unsigned int del;
             for(del = 0; del < 255; del++)
             {
                volatile unsigned int del1;
-               for(del1 = 0; del1 < 250; del1++)
+               for(del1 = 0; del1 < 255; del1++)
                {
                   asm volatile("nop"::);
                }
