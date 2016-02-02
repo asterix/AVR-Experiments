@@ -26,3 +26,11 @@ Solution Comments
 * *Implemented Pin Change Interrupts for Buttons A and C*
 * *Replaced polling with interrupts.*
 
+* Menu: Which LEDs blink can be changed using button C presses
+        Button C presses             Function
+              0               Uses both external LEDs
+              1               Uses 1 external + yellow LED
+              2               Uses green + yellow LEDs
+              3               Uses green + 1 external LED
+
+* *Use Button A to make secondary LED blink 10 times*
