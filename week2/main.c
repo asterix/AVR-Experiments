@@ -264,7 +264,7 @@ void throw_error(error_code_t ec)
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
 {
-   unsigned int button_a_now, button_c_now, it;
+   unsigned int button_a_now, button_c_now, it, i;
 
    if(PINB & (1 << BUTTON_A))
    {
@@ -310,8 +310,20 @@ ISR(PCINT0_vect)
          /* Blink 10 times - 4Hz */
          handle_blinking(0);
          
-         /* 125ms = 64*31250 cycles @ 16MHz */
-         _delay_ms(125);
+         /* 125ms = 31*255*250 + 31*255*5 cycles @ 16MHz */
+         //_delay_ms(125);
+         for(i = 0; i < 31; i++)
+         {
+            volatile unsigned int del;
+            for(del = 0; del < 255; del++)
+            {
+               volatile unsigned int del1;
+               for(del1 = 0; del1 < 250; del1++)
+               {
+                  asm volatile("nop"::);
+               }
+            }
+         }
       }
 
       /* Turn off all */
