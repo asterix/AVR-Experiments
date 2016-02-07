@@ -2,11 +2,14 @@ Problem
 ========
 As part of this assignment, you will need to determine a loop count to create an accurate delay. It doesn’t need to be perfect. The intent is for you to understand the process for worst-case execution time (WCET) and to appreciate the difficulty of tracking time on a processor. The following code might be useful. (You can change this to BusyWait_100ms or whatever unit time makes sense to you.)
 
+```
 // number of empty for loops to delay about 1 ms
 #define LOOP_COUNT_1MS  <put count here>
 
 #define BusyWait_1ms { for ( uint32_t  __i = 0; __i < LOOP_COUNT_1MS; __i++ ) \
 { __asm__ __volatile__ (“nop”); } }
+
+```
 
 Create a single program that contains the following periodic tasks:
 
@@ -37,7 +40,7 @@ Solution Comments
 * Delay using timed for-loop (assembly counted) segments is done for two different values. One 16-bit and one 32-bit delay value. Below are the avr-gcc assembly codes for the same when compiled with -std=c11 (C 2011 standard).
 
 16-bit: (Eg. x = 50000)
-==
+=
 ```
 Delay = (1+8x) instruction cycles
 
@@ -53,7 +56,7 @@ Delay = (1+8x) instruction cycles
 ```
 
 32-bit: (Eg. x = 250000)
-==
+=
 ```
 Delay = (3+11x) instruction cycles
 
