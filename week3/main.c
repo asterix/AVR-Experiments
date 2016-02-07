@@ -1,12 +1,16 @@
 /*-----------------------------------------------------------
-This program makes on-board and external LEDs blink at a 
-given rate depending on selections using buttons. LED used
-can be changed using on-board button C. 
+This program implements interleaved pseudo-scheduling.
+Heart-beat @ 4Hz (blinking on-board green LED)is interleaved
+between intensive tasks which use a for-loop spin for job
+spacing. Another parallel task (blinking yellow on-board LED)
+is done using 1 Hz interrupt
 
-ISR -> Timers, ISR -> PCINTx
+
+
+ISR -> Timers
 
 Author:    desai043
-Created:   01-Feb-2015
+Created:   05-Feb-2016
 Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
            Controller LV with Raspberry Pi Bridge
 
@@ -17,11 +21,18 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #include "main.h"
 
 /* Globals */
-volatile unsigned int  button_a = 0, button_c = 0, event_125ms = 0;
-volatile unsigned char button_a_stat = LOW, button_c_stat = HIGH;
+volatile unsigned int  schedule_task = 0, event_125ms = 0, loop;
+volatile unsigned char button_a_stat = HIGH, button_c_stat = HIGH;
 
 /* Number millisecs since epoch */
 volatile unsigned long int time_ms = 0, tcounter = 0;
+
+#define DELAY_125   181817
+#define DELAY_25    50000
+#define DELAY_50    72727
+
+#define _busy_wait_ms(x)  for(uint32_t i = 0; i < x; i++)  \
+                          { __asm__ __volatile("nop":::);}
 
 
 /* Main */
@@ -33,19 +44,93 @@ int main()
    /* Setup interrupts */
    setup_interrupts();
 
+   /* Turn off all LEDs */
+   clear_all_leds();
+
    /* Enable interrupts */
    sei();
 
    /* Main loop */
    while(1)
    {
-      /*  4Hz */
-      if(event_125ms > 0)
+      /*  Heart-beat 4Hz */
+      if(event_125ms != 0)
       {
          PORTD ^= (1 << LED_GREEN);
          event_125ms = 0;
       }
 
+      /* Task scheduled? */
+      if(schedule_task != 0)
+      {
+         /* Red ON */
+         PORTD |= (1 << LED_EXT3);
+         
+         /* 300ms wait */
+         _busy_wait_ms(DELAY_125); // 125
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 250
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_50); // 300
+
+
+         /* Red OFF, Yellow ON */
+         PORTD &= ~(1 << LED_EXT3);
+         PORTD |= (1 << LED_EXT1);
+         
+         /* 500ms wait */
+         _busy_wait_ms(DELAY_50);  // 50
+         _busy_wait_ms(DELAY_25);  // 75
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 200
+         
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 325
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 450
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_50); // 500
+
+
+         /* Yellow OFF, Red ON */
+         PORTD &= ~(1 << LED_EXT1);
+         PORTD |= (1 << LED_EXT3);
+ 
+         /* 400ms wait */
+         _busy_wait_ms(DELAY_50);  // 50
+         _busy_wait_ms(DELAY_25);  // 75
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 200
+         
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+         _busy_wait_ms(DELAY_125); // 325
+
+         /* Toggle heart-beat */
+         PORTD ^= (1 << LED_GREEN);
+
+         _busy_wait_ms(DELAY_50);  // 375
+         _busy_wait_ms(DELAY_25);  // 400
+
+         
+         /* Red OFF */
+         PORTD &= ~(1 << LED_EXT3);
+         
+         schedule_task = 0;
+      }
    }
 
    return 0;
@@ -58,7 +143,46 @@ void clear_all_leds()
    /* Turn OFF all LEDs */
    PORTC &= ~((1 << LED_YELLOW) | (1 << LED_EXT2));
    PORTD |= (1 << LED_GREEN);
-   PORTD &= ~(1 << LED_EXT1);
+   PORTD &= ~((1 << LED_EXT1) | (1 << LED_EXT3));
+}
+
+/* Check buttons and maintain their presses */
+void check_buttons()
+{
+   unsigned int button_a_now, button_c_now;
+
+   if(PINB & (1 << BUTTON_A))
+   {
+      button_a_now = HIGH;
+   }
+   else
+   {  
+      button_a_now = LOW;
+   }
+
+   /* HIGH -> LOW = Press */
+   if(button_a_stat == HIGH && button_a_now == LOW)
+   {
+      _delay_ms(BLIND_DELAY);
+      schedule_task = 1;
+   }
+
+   /* Button C */
+   if(PINB & (1 << BUTTON_C))
+   {
+      button_c_now = HIGH;
+   }
+   else
+   {  
+      button_c_now = LOW;
+   }
+
+   /* HIGH -> LOW = Press */
+   if(button_c_stat == HIGH && button_c_now == LOW)
+   {
+      _delay_ms(BLIND_DELAY);
+      schedule_task = 1;
+   }
 }
 
 /*-----------------------------------------------------------
@@ -71,7 +195,7 @@ void init_all()
 
    /* Configure LED pins to output */
    DDRC |= ((1 << LED_YELLOW)| (1 << LED_EXT2));
-   DDRD |= ((1 << LED_GREEN) | (1 << LED_EXT1));
+   DDRD |= ((1 << LED_GREEN) | (1 << LED_EXT1) | (1 << LED_EXT3));
 
    /* Configure Button pins to input */
    DDRB &= ~((1 << BUTTON_A) | (1 << BUTTON_C));
@@ -117,14 +241,6 @@ void setup_interrupts()
 {
    int result = 1;
 
-   /* Setup PCINTx interrupts for buttons */
-   result = setup_pcintx(PCINT3);
-
-   if(result)
-   {
-      result = setup_pcintx(PCINT0);
-   }
-
    /* Timer 1 config */
    if(result)
    {
@@ -161,7 +277,7 @@ int setup_autoreload_timer1(unsigned long int delay)
       TCCR1A &= ~((1 << WGM11) | (1 << WGM10));
 
       /* Load compare TOP count */
-      OCR1A = 62500; /* 250ms */
+      OCR1A = 31249; /* 500ms */
 
       /* Interrupts for Timer 1 */
       TIMSK1 |= (1 << OCIE1A);
@@ -192,7 +308,7 @@ int setup_autoreload_timer3(unsigned long int delay)
       TCCR3A &= ~((1 << WGM31) | (1 << WGM30));
 
       /* Load compare TOP count */
-      OCR3A = 16000; /* 1ms */
+      OCR3A = 15999; /* 1ms */
 
       /* Interrupts for Timer 3 */
       TIMSK3 |= (1 << OCIE3A);
@@ -204,31 +320,6 @@ int setup_autoreload_timer3(unsigned long int delay)
 
    return result;
 }
-
-
-
-/* Setup the PCINTx interrupts */
-int setup_pcintx(unsigned char pcintx)
-{
-   int result = 1;
-
-   /* Enable PCINT globally */
-   PCICR |= (1 << PCIE0);
-
-   /* Unmask the requested PCINTx */
-   if(pcintx <= PCINT7)
-   {
-      PCMSK0 |= (1 << pcintx);
-   }
-   else
-   {
-      /* Unknown PCINTx requested */
-      result = 0;
-   }
-   
-   return result;
-}
-
 
 
 /*-----------------------------------------------------------
@@ -270,87 +361,10 @@ void throw_error(error_code_t ec)
              INTERRUPT SERVICE ROUTINES
 -----------------------------------------------------------*/
 
-/* ISR - Pin Change Interrupt */
-/* All PCINTx detections are vectored here */
-ISR(PCINT0_vect)
-{
-   unsigned int button_a_now, button_c_now;
-
-   if(PINB & (1 << BUTTON_A))
-   {
-      button_a_now = HIGH;
-   }
-   else
-   {  
-      button_a_now = LOW;
-   }
-
-   /* HIGH -> LOW = Press */
-   if(button_a_stat == HIGH && button_a_now == LOW)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-      
-      /* Sample again */
-      if(!(PINB & (1 << BUTTON_A)))
-      {
-         button_a++;
-
-         if(button_a >= NUM_MODES)
-         {
-            button_a = 0;
-         }
-
-         button_a_stat = LOW;
-      }
-   }
-   /* LOW -> HIGH = release */
-   else if(button_a_stat == LOW && button_a_now == HIGH)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-      button_a_stat = HIGH;
-   }
-
-
-   /* Button C */
-   if(PINB & (1 << BUTTON_C))
-   {
-      button_c_now = HIGH;
-   }
-   else
-   {  
-      button_c_now = LOW;
-   }
-
-   /* HIGH -> LOW = Press */
-   if(button_c_stat == HIGH && button_c_now == LOW)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-      
-      /* Sample again */
-      if(!(PINB & (1 << BUTTON_C)))
-      {
-         button_c++;
-
-         if(button_c >= NUM_MODES)
-         {
-            button_c = 0;
-         }
-
-         button_c_stat = LOW;
-      }
-   }
-   /* LOW -> HIGH = release */
-   else if(button_c_stat == LOW && button_c_now == HIGH)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-      button_c_stat = HIGH;
-   }
-}
-
-
 /*ISR - Timer 1 compare A interrupt */
 ISR(TIMER1_COMPA_vect)
 {
+   /* Toggles every 500ms - 1Hz */
    tcounter++;
    PORTC ^= (1 << LED_YELLOW);
 }
@@ -359,10 +373,17 @@ ISR(TIMER1_COMPA_vect)
 ISR(TIMER3_COMPA_vect)
 {
    time_ms++;
-
+   
+   /* Heart-beat toggle 125ms - 4Hz */
    if(time_ms % 125 == 0)
    {
        event_125ms = 1;
+   }
+
+   /* Poll buttons every 50ms */
+   if(time_ms % 50 == 0)
+   {
+      check_buttons();
    }
 }
 

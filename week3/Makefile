@@ -2,7 +2,7 @@ PORT=/dev/ttyACM0
 MCU=atmega32u4
 CFLAGS=-g -Wall -mcall-prologues -mmcu=$(MCU) -Os
 LDFLAGS=-Wl,-gc-sections -Wl,-relax
-CC=avr-gcc
+CC=avr-gcc -std=c11
 TARGET=main
 OBJECT_FILES=main.o
 
