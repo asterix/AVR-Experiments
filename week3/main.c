@@ -5,8 +5,6 @@ between intensive tasks which use a for-loop spin for job
 spacing. Another parallel task (blinking yellow on-board LED)
 is done using 1 Hz interrupt
 
-
-
 ISR -> Timers
 
 Author:    desai043
