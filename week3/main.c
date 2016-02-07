@@ -27,13 +27,6 @@ volatile unsigned char button_a_stat = HIGH, button_c_stat = HIGH;
 /* Number millisecs since epoch */
 volatile unsigned long int time_ms = 0, tcounter = 0;
 
-#define DELAY_125   181817
-#define DELAY_25    50000
-#define DELAY_50    72727
-
-#define _busy_wait_ms(x)  for(uint32_t i = 0; i < x; i++)  \
-                          { __asm__ __volatile("nop":::);}
-
 
 /* Main */
 int main()

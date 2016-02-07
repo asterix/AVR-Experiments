@@ -1,8 +1,11 @@
 /*-----------------------------------------------------
-This program makes on-board and external LEDs blink 
-at a given rate depending on selections using buttons.
-LED used can be changed using on-board button C.
-ISR -> Timers, ISR -> PCINTx
+This program implements interleaved pseudo-scheduling.
+Heart-beat @ 4Hz (blinking on-board green LED)is interleaved
+between intensive tasks which use a for-loop spin for job
+spacing. Another parallel task (blinking yellow on-board LED)
+is done using 1 Hz interrupt
+
+ISR -> Timers
 
 Author:    desai043
 Created:   05-Feb-2016
@@ -31,6 +34,14 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #define LED_EXT3   PORTD1 // RED
 
 #define BLIND_DELAY  1    /* Blind cycle time (ms) */
+
+#define DELAY_125   181817
+#define DELAY_25    50000
+#define DELAY_50    72727
+
+#define _busy_wait_ms(x)  for(uint32_t i = 0; i < x; i++)  \
+                          { __asm__ __volatile("nop":::);}
+
 
 /* HIGH and LOW for buttons */
 enum
