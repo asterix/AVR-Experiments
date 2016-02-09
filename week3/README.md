@@ -39,6 +39,13 @@ Solution Comments
 
 * Delay using timed for-loop (assembly counted) segments is done for two different values. One 16-bit and one 32-bit delay value. Below are the avr-gcc assembly codes for the same when compiled with -std=c11 (C 2011 standard).
 
+```
+The macro is compiled to assembly as below
+
+#define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
+                           { __asm__ __volatile("nop":::);}
+```
+
 16-bit: (Eg. x = 50000)
 =
 ```
