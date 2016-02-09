@@ -35,12 +35,12 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 #define BLIND_DELAY  1    /* Blind cycle time (ms) */
 
-#define DELAY_125   181817
-#define DELAY_25    50000
-#define DELAY_50    72727
+#define DELAY_300    436363
+#define DELAY_400    581817
+#define DELAY_500    727272
 
-#define _busy_wait_ms(x)  for(uint32_t i = 0; i < x; i++)  \
-                          { __asm__ __volatile("nop":::);}
+#define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
+                           { __asm__ __volatile("nop":::);}
 
 
 /* HIGH and LOW for buttons */

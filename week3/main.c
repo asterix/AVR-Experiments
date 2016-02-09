@@ -19,7 +19,7 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #include "main.h"
 
 /* Globals */
-volatile unsigned int  schedule_task = 0, event_125ms = 0, loop;
+volatile unsigned int  schedule_task = 0, event_250ms = 0, loop;
 volatile unsigned char button_a_stat = HIGH, button_c_stat = HIGH;
 
 /* Number millisecs since epoch */
@@ -45,10 +45,10 @@ int main()
    while(1)
    {
       /*  Heart-beat 4Hz */
-      if(event_125ms != 0)
+      if(event_250ms != 0)
       {
          PORTD ^= (1 << LED_GREEN);
-         event_125ms = 0;
+         event_250ms = 0;
       }
 
       /* Task scheduled? */
@@ -58,64 +58,21 @@ int main()
          PORTD |= (1 << LED_EXT3);
          
          /* 300ms wait */
-         _busy_wait_ms(DELAY_125); // 125
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 250
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_50); // 300
-
+         _busy_wait_ms(DELAY_300);
 
          /* Red OFF, Yellow ON */
          PORTD &= ~(1 << LED_EXT3);
          PORTD |= (1 << LED_EXT1);
          
          /* 500ms wait */
-         _busy_wait_ms(DELAY_50);  // 50
-         _busy_wait_ms(DELAY_25);  // 75
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 200
-         
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 325
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 450
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_50); // 500
-
+         _busy_wait_ms(DELAY_500);
 
          /* Yellow OFF, Red ON */
          PORTD &= ~(1 << LED_EXT1);
          PORTD |= (1 << LED_EXT3);
  
          /* 400ms wait */
-         _busy_wait_ms(DELAY_50);  // 50
-         _busy_wait_ms(DELAY_25);  // 75
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 200
-         
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-         _busy_wait_ms(DELAY_125); // 325
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
-
-         _busy_wait_ms(DELAY_50);  // 375
-         _busy_wait_ms(DELAY_25);  // 400
-
+         _busy_wait_ms(DELAY_400);
          
          /* Red OFF */
          PORTD &= ~(1 << LED_EXT3);
@@ -268,7 +225,7 @@ int setup_autoreload_timer1(unsigned long int delay)
       TCCR1A &= ~((1 << WGM11) | (1 << WGM10));
 
       /* Load compare TOP count */
-      OCR1A = 31249; /* 500ms */
+      OCR1A = 62499; /* 1s */
 
       /* Interrupts for Timer 1 */
       TIMSK1 |= (1 << OCIE1A);
@@ -355,7 +312,7 @@ void throw_error(error_code_t ec)
 /*ISR - Timer 1 compare A interrupt */
 ISR(TIMER1_COMPA_vect)
 {
-   /* Toggles every 500ms - 1Hz */
+   /* Toggles every 1s - 1Hz */
    tcounter++;
    PORTC ^= (1 << LED_YELLOW);
 }
@@ -365,10 +322,16 @@ ISR(TIMER3_COMPA_vect)
 {
    time_ms++;
    
-   /* Heart-beat toggle 125ms - 4Hz */
-   if(time_ms % 125 == 0)
+   /* Heart-beat toggle 250ms - 4Hz */
+   if(time_ms % 250 == 0)
    {
-       event_125ms = 1;
+       event_250ms = 1;
+
+       /* During intensive tasks, blink here */ 
+       if(schedule_task != 0)
+       {
+          PORTD ^= (1 << LED_GREEN);
+       }
    }
 
    /* Poll buttons every 50ms */

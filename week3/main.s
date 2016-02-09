@@ -104,8 +104,8 @@ Disassembly of section .text:
   b8:	11 e0       	ldi	r17, 0x01	; 1
   ba:	a0 e0       	ldi	r26, 0x00	; 0
   bc:	b1 e0       	ldi	r27, 0x01	; 1
-  be:	e2 ea       	ldi	r30, 0xA2	; 162
-  c0:	f5 e0       	ldi	r31, 0x05	; 5
+  be:	e4 e6       	ldi	r30, 0x64	; 100
+  c0:	f4 e0       	ldi	r31, 0x04	; 4
   c2:	02 c0       	rjmp	.+4      	; 0xc8 <__do_copy_data+0x10>
   c4:	05 90       	lpm	r0, Z+
   c6:	0d 92       	st	X+, r0
@@ -127,7 +127,7 @@ Disassembly of section .text:
   da:	b2 07       	cpc	r27, r18
   dc:	e1 f7       	brne	.-8      	; 0xd6 <.do_clear_bss_loop>
   de:	57 d1       	rcall	.+686    	; 0x38e <main>
-  e0:	5e c2       	rjmp	.+1212   	; 0x59e <_exit>
+  e0:	bf c1       	rjmp	.+894    	; 0x460 <_exit>
 
 000000e2 <__bad_interrupt>:
   e2:	8e cf       	rjmp	.-228    	; 0x0 <__vectors>
@@ -175,8 +175,8 @@ void check_buttons()
 	#endif
 
 	__builtin_avr_delay_cycles(__ticks_dc);
- 102:	8f e3       	ldi	r24, 0x3F	; 63
- 104:	9c e9       	ldi	r25, 0x9C	; 156
+ 102:	8f e9       	ldi	r24, 0x9F	; 159
+ 104:	9f e0       	ldi	r25, 0x0F	; 15
  106:	01 97       	sbiw	r24, 0x01	; 1
  108:	f1 f7       	brne	.-4      	; 0x106 <check_buttons+0x12>
  10a:	00 c0       	rjmp	.+0      	; 0x10c <check_buttons+0x18>
@@ -204,8 +204,8 @@ void check_buttons()
  122:	71 f4       	brne	.+28     	; 0x140 <check_buttons+0x4c>
  124:	80 fd       	sbrc	r24, 0
  126:	0c c0       	rjmp	.+24     	; 0x140 <check_buttons+0x4c>
- 128:	8f e3       	ldi	r24, 0x3F	; 63
- 12a:	9c e9       	ldi	r25, 0x9C	; 156
+ 128:	8f e9       	ldi	r24, 0x9F	; 159
+ 12a:	9f e0       	ldi	r25, 0x0F	; 15
  12c:	01 97       	sbiw	r24, 0x01	; 1
  12e:	f1 f7       	brne	.-4      	; 0x12c <check_buttons+0x38>
  130:	00 c0       	rjmp	.+0      	; 0x132 <check_buttons+0x3e>
@@ -358,8 +358,8 @@ void startup_pattern_show()
  1d4:	8c 93       	st	X, r24
 
       /* Load compare TOP count */
-      OCR1A = 62500; /* 250ms */
- 1d6:	84 e2       	ldi	r24, 0x24	; 36
+      OCR1A = 62499; /* 1s */
+ 1d6:	83 e2       	ldi	r24, 0x23	; 35
  1d8:	94 ef       	ldi	r25, 0xF4	; 244
  1da:	90 93 89 00 	sts	0x0089, r25
  1de:	80 93 88 00 	sts	0x0088, r24
@@ -418,8 +418,8 @@ void startup_pattern_show()
  21e:	8c 93       	st	X, r24
 
       /* Load compare TOP count */
-      OCR3A = 16000; /* 1ms */
- 220:	80 e8       	ldi	r24, 0x80	; 128
+      OCR3A = 15999; /* 1ms */
+ 220:	8f e7       	ldi	r24, 0x7F	; 127
  222:	9e e3       	ldi	r25, 0x3E	; 62
  224:	90 93 99 00 	sts	0x0099, r25
  228:	80 93 98 00 	sts	0x0098, r24
@@ -546,6 +546,7 @@ ISR(TIMER1_COMPA_vect)
  28e:	9f 93       	push	r25
  290:	af 93       	push	r26
  292:	bf 93       	push	r27
+   /* Toggles every 1s - 1Hz */
    tcounter++;
  294:	80 91 02 01 	lds	r24, 0x0102
  298:	90 91 03 01 	lds	r25, 0x0103
@@ -606,11 +607,11 @@ ISR(TIMER1_COMPA_vect)
  31e:	70 91 07 01 	lds	r23, 0x0107
  322:	80 91 08 01 	lds	r24, 0x0108
  326:	90 91 09 01 	lds	r25, 0x0109
- 32a:	2d e7       	ldi	r18, 0x7D	; 125
+ 32a:	2a ef       	ldi	r18, 0xFA	; 250
  32c:	30 e0       	ldi	r19, 0x00	; 0
  32e:	40 e0       	ldi	r20, 0x00	; 0
  330:	50 e0       	ldi	r21, 0x00	; 0
- 332:	13 d1       	rcall	.+550    	; 0x55a <__udivmodsi4>
+ 332:	74 d0       	rcall	.+232    	; 0x41c <__udivmodsi4>
  334:	67 2b       	or	r22, r23
  336:	68 2b       	or	r22, r24
  338:	69 2b       	or	r22, r25
@@ -627,7 +628,7 @@ ISR(TIMER1_COMPA_vect)
  35a:	30 e0       	ldi	r19, 0x00	; 0
  35c:	40 e0       	ldi	r20, 0x00	; 0
  35e:	50 e0       	ldi	r21, 0x00	; 0
- 360:	fc d0       	rcall	.+504    	; 0x55a <__udivmodsi4>
+ 360:	5d d0       	rcall	.+186    	; 0x41c <__udivmodsi4>
  362:	67 2b       	or	r22, r23
  364:	68 2b       	or	r22, r24
  366:	69 2b       	or	r22, r25
@@ -673,7 +674,7 @@ int main()
    while(1)
    {
       /*  Heart-beat 4Hz */
-      if(event_125ms != 0)
+      if(event_250ms != 0)
       {
          PORTD ^= (1 << LED_GREEN);
  39c:	90 91 0b 01 	lds	r25, 0x010B
@@ -682,7 +683,7 @@ int main()
    while(1)
    {
       /*  Heart-beat 4Hz */
-      if(event_125ms != 0)
+      if(event_250ms != 0)
  3a0:	89 2b       	or	r24, r25
  3a2:	39 f0       	breq	.+14     	; 0x3b2 <main+0x24>
  3a4:	8b b1       	in	r24, 0x0b	; 11
@@ -692,7 +693,7 @@ int main()
          PORTD ^= (1 << LED_GREEN);
  3aa:	10 92 0b 01 	sts	0x010B, r1
  3ae:	10 92 0a 01 	sts	0x010A, r1
-         event_125ms = 0;
+         event_250ms = 0;
  3b2:	80 91 0c 01 	lds	r24, 0x010C
  3b6:	90 91 0d 01 	lds	r25, 0x010D
       }
@@ -702,320 +703,118 @@ int main()
  3ba:	89 2b       	or	r24, r25
  3bc:	69 f3       	breq	.-38     	; 0x398 <main+0xa>
  3be:	59 9a       	sbi	0x0b, 1	; 11
- 3c0:	89 e3       	ldi	r24, 0x39	; 57
- 3c2:	96 ec       	ldi	r25, 0xC6	; 198
+ 3c0:	8b e8       	ldi	r24, 0x8B	; 139
+ 3c2:	98 ea       	ldi	r25, 0xA8	; 168
       {
          /* Red ON */
          PORTD |= (1 << LED_EXT3);
- 3c4:	a2 e0       	ldi	r26, 0x02	; 2
+ 3c4:	a6 e0       	ldi	r26, 0x06	; 6
  3c6:	b0 e0       	ldi	r27, 0x00	; 0
  3c8:	00 00       	nop
  3ca:	01 97       	sbiw	r24, 0x01	; 1
  3cc:	a1 09       	sbc	r26, r1
          
          /* 300ms wait */
-         _busy_wait_ms(DELAY_125); // 125
+         _busy_wait_ms(DELAY_300);
  3ce:	b1 09       	sbc	r27, r1
  3d0:	00 97       	sbiw	r24, 0x00	; 0
  3d2:	a1 05       	cpc	r26, r1
  3d4:	b1 05       	cpc	r27, r1
  3d6:	c1 f7       	brne	.-16     	; 0x3c8 <main+0x3a>
- 3d8:	8b b1       	in	r24, 0x0b	; 11
- 3da:	82 27       	eor	r24, r18
- 3dc:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 3de:	89 e3       	ldi	r24, 0x39	; 57
- 3e0:	96 ec       	ldi	r25, 0xC6	; 198
- 3e2:	a2 e0       	ldi	r26, 0x02	; 2
- 3e4:	b0 e0       	ldi	r27, 0x00	; 0
- 3e6:	00 00       	nop
- 3e8:	01 97       	sbiw	r24, 0x01	; 1
- 3ea:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 250
- 3ec:	b1 09       	sbc	r27, r1
- 3ee:	00 97       	sbiw	r24, 0x00	; 0
- 3f0:	a1 05       	cpc	r26, r1
- 3f2:	b1 05       	cpc	r27, r1
- 3f4:	c1 f7       	brne	.-16     	; 0x3e6 <main+0x58>
- 3f6:	8b b1       	in	r24, 0x0b	; 11
- 3f8:	82 27       	eor	r24, r18
- 3fa:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 3fc:	87 e1       	ldi	r24, 0x17	; 23
- 3fe:	9c e1       	ldi	r25, 0x1C	; 28
- 400:	a1 e0       	ldi	r26, 0x01	; 1
- 402:	b0 e0       	ldi	r27, 0x00	; 0
- 404:	00 00       	nop
- 406:	01 97       	sbiw	r24, 0x01	; 1
- 408:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_50); // 300
- 40a:	b1 09       	sbc	r27, r1
- 40c:	00 97       	sbiw	r24, 0x00	; 0
- 40e:	a1 05       	cpc	r26, r1
- 410:	b1 05       	cpc	r27, r1
- 412:	c1 f7       	brne	.-16     	; 0x404 <main+0x76>
- 414:	59 98       	cbi	0x0b, 1	; 11
- 416:	5c 9a       	sbi	0x0b, 4	; 11
- 418:	87 e1       	ldi	r24, 0x17	; 23
-
+ 3d8:	59 98       	cbi	0x0b, 1	; 11
+ 3da:	5c 9a       	sbi	0x0b, 4	; 11
+ 3dc:	88 ee       	ldi	r24, 0xE8	; 232
 
          /* Red OFF, Yellow ON */
          PORTD &= ~(1 << LED_EXT3);
- 41a:	9c e1       	ldi	r25, 0x1C	; 28
+ 3de:	98 e1       	ldi	r25, 0x18	; 24
          PORTD |= (1 << LED_EXT1);
- 41c:	a1 e0       	ldi	r26, 0x01	; 1
- 41e:	b0 e0       	ldi	r27, 0x00	; 0
- 420:	00 00       	nop
- 422:	01 97       	sbiw	r24, 0x01	; 1
- 424:	a1 09       	sbc	r26, r1
+ 3e0:	ab e0       	ldi	r26, 0x0B	; 11
+ 3e2:	b0 e0       	ldi	r27, 0x00	; 0
+ 3e4:	00 00       	nop
+ 3e6:	01 97       	sbiw	r24, 0x01	; 1
+ 3e8:	a1 09       	sbc	r26, r1
          
          /* 500ms wait */
-         _busy_wait_ms(DELAY_50);  // 50
- 426:	b1 09       	sbc	r27, r1
- 428:	00 97       	sbiw	r24, 0x00	; 0
- 42a:	a1 05       	cpc	r26, r1
- 42c:	b1 05       	cpc	r27, r1
- 42e:	c1 f7       	brne	.-16     	; 0x420 <main+0x92>
- 430:	80 e0       	ldi	r24, 0x00	; 0
- 432:	90 e0       	ldi	r25, 0x00	; 0
- 434:	00 00       	nop
- 436:	01 96       	adiw	r24, 0x01	; 1
- 438:	80 35       	cpi	r24, 0x50	; 80
-         _busy_wait_ms(DELAY_25);  // 75
- 43a:	33 ec       	ldi	r19, 0xC3	; 195
- 43c:	93 07       	cpc	r25, r19
- 43e:	d1 f7       	brne	.-12     	; 0x434 <main+0xa6>
- 440:	8b b1       	in	r24, 0x0b	; 11
- 442:	82 27       	eor	r24, r18
- 444:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 446:	89 e3       	ldi	r24, 0x39	; 57
- 448:	96 ec       	ldi	r25, 0xC6	; 198
- 44a:	a2 e0       	ldi	r26, 0x02	; 2
- 44c:	b0 e0       	ldi	r27, 0x00	; 0
- 44e:	00 00       	nop
- 450:	01 97       	sbiw	r24, 0x01	; 1
- 452:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 200
- 454:	b1 09       	sbc	r27, r1
- 456:	00 97       	sbiw	r24, 0x00	; 0
- 458:	a1 05       	cpc	r26, r1
- 45a:	b1 05       	cpc	r27, r1
- 45c:	c1 f7       	brne	.-16     	; 0x44e <main+0xc0>
- 45e:	8b b1       	in	r24, 0x0b	; 11
- 460:	82 27       	eor	r24, r18
- 462:	8b b9       	out	0x0b, r24	; 11
-         
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 464:	89 e3       	ldi	r24, 0x39	; 57
- 466:	96 ec       	ldi	r25, 0xC6	; 198
- 468:	a2 e0       	ldi	r26, 0x02	; 2
- 46a:	b0 e0       	ldi	r27, 0x00	; 0
- 46c:	00 00       	nop
- 46e:	01 97       	sbiw	r24, 0x01	; 1
- 470:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 325
- 472:	b1 09       	sbc	r27, r1
- 474:	00 97       	sbiw	r24, 0x00	; 0
- 476:	a1 05       	cpc	r26, r1
- 478:	b1 05       	cpc	r27, r1
- 47a:	c1 f7       	brne	.-16     	; 0x46c <main+0xde>
- 47c:	8b b1       	in	r24, 0x0b	; 11
- 47e:	82 27       	eor	r24, r18
- 480:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 482:	89 e3       	ldi	r24, 0x39	; 57
- 484:	96 ec       	ldi	r25, 0xC6	; 198
- 486:	a2 e0       	ldi	r26, 0x02	; 2
- 488:	b0 e0       	ldi	r27, 0x00	; 0
- 48a:	00 00       	nop
- 48c:	01 97       	sbiw	r24, 0x01	; 1
- 48e:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 450
- 490:	b1 09       	sbc	r27, r1
- 492:	00 97       	sbiw	r24, 0x00	; 0
- 494:	a1 05       	cpc	r26, r1
- 496:	b1 05       	cpc	r27, r1
- 498:	c1 f7       	brne	.-16     	; 0x48a <main+0xfc>
- 49a:	8b b1       	in	r24, 0x0b	; 11
- 49c:	82 27       	eor	r24, r18
- 49e:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 4a0:	87 e1       	ldi	r24, 0x17	; 23
- 4a2:	9c e1       	ldi	r25, 0x1C	; 28
- 4a4:	a1 e0       	ldi	r26, 0x01	; 1
- 4a6:	b0 e0       	ldi	r27, 0x00	; 0
- 4a8:	00 00       	nop
- 4aa:	01 97       	sbiw	r24, 0x01	; 1
- 4ac:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_50); // 500
- 4ae:	b1 09       	sbc	r27, r1
- 4b0:	00 97       	sbiw	r24, 0x00	; 0
- 4b2:	a1 05       	cpc	r26, r1
- 4b4:	b1 05       	cpc	r27, r1
- 4b6:	c1 f7       	brne	.-16     	; 0x4a8 <main+0x11a>
- 4b8:	5c 98       	cbi	0x0b, 4	; 11
- 4ba:	59 9a       	sbi	0x0b, 1	; 11
- 4bc:	87 e1       	ldi	r24, 0x17	; 23
-
+         _busy_wait_ms(DELAY_500);
+ 3ea:	b1 09       	sbc	r27, r1
+ 3ec:	00 97       	sbiw	r24, 0x00	; 0
+ 3ee:	a1 05       	cpc	r26, r1
+ 3f0:	b1 05       	cpc	r27, r1
+ 3f2:	c1 f7       	brne	.-16     	; 0x3e4 <main+0x56>
+ 3f4:	5c 98       	cbi	0x0b, 4	; 11
+ 3f6:	59 9a       	sbi	0x0b, 1	; 11
+ 3f8:	89 eb       	ldi	r24, 0xB9	; 185
 
          /* Yellow OFF, Red ON */
          PORTD &= ~(1 << LED_EXT1);
- 4be:	9c e1       	ldi	r25, 0x1C	; 28
+ 3fa:	90 ee       	ldi	r25, 0xE0	; 224
          PORTD |= (1 << LED_EXT3);
- 4c0:	a1 e0       	ldi	r26, 0x01	; 1
- 4c2:	b0 e0       	ldi	r27, 0x00	; 0
- 4c4:	00 00       	nop
- 4c6:	01 97       	sbiw	r24, 0x01	; 1
- 4c8:	a1 09       	sbc	r26, r1
+ 3fc:	a8 e0       	ldi	r26, 0x08	; 8
+ 3fe:	b0 e0       	ldi	r27, 0x00	; 0
+ 400:	00 00       	nop
+ 402:	01 97       	sbiw	r24, 0x01	; 1
+ 404:	a1 09       	sbc	r26, r1
  
          /* 400ms wait */
-         _busy_wait_ms(DELAY_50);  // 50
- 4ca:	b1 09       	sbc	r27, r1
- 4cc:	00 97       	sbiw	r24, 0x00	; 0
- 4ce:	a1 05       	cpc	r26, r1
- 4d0:	b1 05       	cpc	r27, r1
- 4d2:	c1 f7       	brne	.-16     	; 0x4c4 <main+0x136>
- 4d4:	80 e0       	ldi	r24, 0x00	; 0
- 4d6:	90 e0       	ldi	r25, 0x00	; 0
- 4d8:	00 00       	nop
- 4da:	01 96       	adiw	r24, 0x01	; 1
- 4dc:	80 35       	cpi	r24, 0x50	; 80
-         _busy_wait_ms(DELAY_25);  // 75
- 4de:	33 ec       	ldi	r19, 0xC3	; 195
- 4e0:	93 07       	cpc	r25, r19
- 4e2:	d1 f7       	brne	.-12     	; 0x4d8 <main+0x14a>
- 4e4:	8b b1       	in	r24, 0x0b	; 11
- 4e6:	82 27       	eor	r24, r18
- 4e8:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 4ea:	89 e3       	ldi	r24, 0x39	; 57
- 4ec:	96 ec       	ldi	r25, 0xC6	; 198
- 4ee:	a2 e0       	ldi	r26, 0x02	; 2
- 4f0:	b0 e0       	ldi	r27, 0x00	; 0
- 4f2:	00 00       	nop
- 4f4:	01 97       	sbiw	r24, 0x01	; 1
- 4f6:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 200
- 4f8:	b1 09       	sbc	r27, r1
- 4fa:	00 97       	sbiw	r24, 0x00	; 0
- 4fc:	a1 05       	cpc	r26, r1
- 4fe:	b1 05       	cpc	r27, r1
- 500:	c1 f7       	brne	.-16     	; 0x4f2 <main+0x164>
- 502:	8b b1       	in	r24, 0x0b	; 11
- 504:	82 27       	eor	r24, r18
- 506:	8b b9       	out	0x0b, r24	; 11
-         
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 508:	89 e3       	ldi	r24, 0x39	; 57
- 50a:	96 ec       	ldi	r25, 0xC6	; 198
- 50c:	a2 e0       	ldi	r26, 0x02	; 2
- 50e:	b0 e0       	ldi	r27, 0x00	; 0
- 510:	00 00       	nop
- 512:	01 97       	sbiw	r24, 0x01	; 1
- 514:	a1 09       	sbc	r26, r1
-         _busy_wait_ms(DELAY_125); // 325
- 516:	b1 09       	sbc	r27, r1
- 518:	00 97       	sbiw	r24, 0x00	; 0
- 51a:	a1 05       	cpc	r26, r1
- 51c:	b1 05       	cpc	r27, r1
- 51e:	c1 f7       	brne	.-16     	; 0x510 <main+0x182>
- 520:	8b b1       	in	r24, 0x0b	; 11
- 522:	82 27       	eor	r24, r18
- 524:	8b b9       	out	0x0b, r24	; 11
-
-         /* Toggle heart-beat */
-         PORTD ^= (1 << LED_GREEN);
- 526:	87 e1       	ldi	r24, 0x17	; 23
- 528:	9c e1       	ldi	r25, 0x1C	; 28
- 52a:	a1 e0       	ldi	r26, 0x01	; 1
- 52c:	b0 e0       	ldi	r27, 0x00	; 0
- 52e:	00 00       	nop
- 530:	01 97       	sbiw	r24, 0x01	; 1
- 532:	a1 09       	sbc	r26, r1
-
-         _busy_wait_ms(DELAY_50);  // 375
- 534:	b1 09       	sbc	r27, r1
- 536:	00 97       	sbiw	r24, 0x00	; 0
- 538:	a1 05       	cpc	r26, r1
- 53a:	b1 05       	cpc	r27, r1
- 53c:	c1 f7       	brne	.-16     	; 0x52e <main+0x1a0>
- 53e:	80 e0       	ldi	r24, 0x00	; 0
- 540:	90 e0       	ldi	r25, 0x00	; 0
- 542:	00 00       	nop
- 544:	01 96       	adiw	r24, 0x01	; 1
- 546:	80 35       	cpi	r24, 0x50	; 80
-         _busy_wait_ms(DELAY_25);  // 400
- 548:	33 ec       	ldi	r19, 0xC3	; 195
- 54a:	93 07       	cpc	r25, r19
- 54c:	d1 f7       	brne	.-12     	; 0x542 <main+0x1b4>
- 54e:	59 98       	cbi	0x0b, 1	; 11
- 550:	10 92 0d 01 	sts	0x010D, r1
-
+         _busy_wait_ms(DELAY_400);
+ 406:	b1 09       	sbc	r27, r1
+ 408:	00 97       	sbiw	r24, 0x00	; 0
+ 40a:	a1 05       	cpc	r26, r1
+ 40c:	b1 05       	cpc	r27, r1
+ 40e:	c1 f7       	brne	.-16     	; 0x400 <main+0x72>
+ 410:	59 98       	cbi	0x0b, 1	; 11
+ 412:	10 92 0d 01 	sts	0x010D, r1
          
          /* Red OFF */
          PORTD &= ~(1 << LED_EXT3);
- 554:	10 92 0c 01 	sts	0x010C, r1
+ 416:	10 92 0c 01 	sts	0x010C, r1
          
          schedule_task = 0;
- 558:	1f cf       	rjmp	.-450    	; 0x398 <main+0xa>
+ 41a:	be cf       	rjmp	.-132    	; 0x398 <main+0xa>
 
-0000055a <__udivmodsi4>:
- 55a:	a1 e2       	ldi	r26, 0x21	; 33
- 55c:	1a 2e       	mov	r1, r26
- 55e:	aa 1b       	sub	r26, r26
- 560:	bb 1b       	sub	r27, r27
- 562:	fd 01       	movw	r30, r26
- 564:	0d c0       	rjmp	.+26     	; 0x580 <__udivmodsi4_ep>
+0000041c <__udivmodsi4>:
+ 41c:	a1 e2       	ldi	r26, 0x21	; 33
+ 41e:	1a 2e       	mov	r1, r26
+ 420:	aa 1b       	sub	r26, r26
+ 422:	bb 1b       	sub	r27, r27
+ 424:	fd 01       	movw	r30, r26
+ 426:	0d c0       	rjmp	.+26     	; 0x442 <__udivmodsi4_ep>
 
-00000566 <__udivmodsi4_loop>:
- 566:	aa 1f       	adc	r26, r26
- 568:	bb 1f       	adc	r27, r27
- 56a:	ee 1f       	adc	r30, r30
- 56c:	ff 1f       	adc	r31, r31
- 56e:	a2 17       	cp	r26, r18
- 570:	b3 07       	cpc	r27, r19
- 572:	e4 07       	cpc	r30, r20
- 574:	f5 07       	cpc	r31, r21
- 576:	20 f0       	brcs	.+8      	; 0x580 <__udivmodsi4_ep>
- 578:	a2 1b       	sub	r26, r18
- 57a:	b3 0b       	sbc	r27, r19
- 57c:	e4 0b       	sbc	r30, r20
- 57e:	f5 0b       	sbc	r31, r21
+00000428 <__udivmodsi4_loop>:
+ 428:	aa 1f       	adc	r26, r26
+ 42a:	bb 1f       	adc	r27, r27
+ 42c:	ee 1f       	adc	r30, r30
+ 42e:	ff 1f       	adc	r31, r31
+ 430:	a2 17       	cp	r26, r18
+ 432:	b3 07       	cpc	r27, r19
+ 434:	e4 07       	cpc	r30, r20
+ 436:	f5 07       	cpc	r31, r21
+ 438:	20 f0       	brcs	.+8      	; 0x442 <__udivmodsi4_ep>
+ 43a:	a2 1b       	sub	r26, r18
+ 43c:	b3 0b       	sbc	r27, r19
+ 43e:	e4 0b       	sbc	r30, r20
+ 440:	f5 0b       	sbc	r31, r21
 
-00000580 <__udivmodsi4_ep>:
- 580:	66 1f       	adc	r22, r22
- 582:	77 1f       	adc	r23, r23
- 584:	88 1f       	adc	r24, r24
- 586:	99 1f       	adc	r25, r25
- 588:	1a 94       	dec	r1
- 58a:	69 f7       	brne	.-38     	; 0x566 <__udivmodsi4_loop>
- 58c:	60 95       	com	r22
- 58e:	70 95       	com	r23
- 590:	80 95       	com	r24
- 592:	90 95       	com	r25
- 594:	9b 01       	movw	r18, r22
- 596:	ac 01       	movw	r20, r24
- 598:	bd 01       	movw	r22, r26
- 59a:	cf 01       	movw	r24, r30
- 59c:	08 95       	ret
+00000442 <__udivmodsi4_ep>:
+ 442:	66 1f       	adc	r22, r22
+ 444:	77 1f       	adc	r23, r23
+ 446:	88 1f       	adc	r24, r24
+ 448:	99 1f       	adc	r25, r25
+ 44a:	1a 94       	dec	r1
+ 44c:	69 f7       	brne	.-38     	; 0x428 <__udivmodsi4_loop>
+ 44e:	60 95       	com	r22
+ 450:	70 95       	com	r23
+ 452:	80 95       	com	r24
+ 454:	90 95       	com	r25
+ 456:	9b 01       	movw	r18, r22
+ 458:	ac 01       	movw	r20, r24
+ 45a:	bd 01       	movw	r22, r26
+ 45c:	cf 01       	movw	r24, r30
+ 45e:	08 95       	ret
 
-0000059e <_exit>:
- 59e:	f8 94       	cli
+00000460 <_exit>:
+ 460:	f8 94       	cli
 
-000005a0 <__stop_program>:
- 5a0:	ff cf       	rjmp	.-2      	; 0x5a0 <__stop_program>
+00000462 <__stop_program>:
+ 462:	ff cf       	rjmp	.-2      	; 0x462 <__stop_program>
