@@ -11,15 +11,17 @@
            XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
 -----------------------------------------------------------*/
 
-#ifndef _UART_MENU_H_
-#define _UART_MENU_H_
+#ifndef _USART_H_
+#define _USART_H_
 
 #include <stdbool.h>
+#include <avr/interrupt.h>
 #include "globals.h"
-
 
 #define UART_BAUD 115200
 #define UART_SCLK (F_CPU / (8 * UART_BAUD))
+
+#define USART_BUFFER_SIZE 50
 
 typedef enum
 {
@@ -28,6 +30,34 @@ typedef enum
    USART_MASTER_SYNC
 } usart_mode_t;
 
-bool configure_module_usart(usart_mode_t mode);
+typedef struct
+{
+   char data[USART_BUFFER_SIZE];
+   uint8_t len;
+   uint8_t idx;
+} ubuffer_t;
+
+typedef enum
+{
+   U_ENABLE = 0,
+   U_DISABLE
+} usart_stat_t;
+
+
+bool usart_setup_configure(usart_mode_t mode);
+
+void usart_reset_buffers();
+
+void usart_start_send();
+
+bool usart_manage_trx(usart_stat_t st);
+
+void usart_loopback();
+
+void usart_1_enable_interrupts();
+
+uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
+
+void usart_deregister_cb(uint8_t cbnum);
 
 #endif /* _UART_MENU_H_ */

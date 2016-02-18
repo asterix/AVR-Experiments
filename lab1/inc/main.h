@@ -15,15 +15,6 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #include "globals.h"
 
 /* Function prototypes */
-void init_all(void);
-void startup_pattern_show(void);
 void handle_blinking(int where);
-void clear_all_leds(void);
-
-void throw_error(error_code_t ec);
-
-void setup_interrupts(void);
-int setup_autoreload_timer1(unsigned long int delay);
-int setup_pcintx(unsigned char pcintx);
 
 

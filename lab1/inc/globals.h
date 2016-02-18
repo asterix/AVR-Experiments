@@ -1,8 +1,6 @@
 /*-----------------------------------------------------------
-- Pseudo-task scheduler
-- UART based menu
-- 
-
+- Global common definitions, types, provisions
+- Exception handlers
 
 Author:    desai043
 Created:   17-Feb-2016
@@ -32,8 +30,11 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #define LED_EXT1   PORTD4
 #define LED_EXT2   PORTC6
 
-#define NUM_MODES       4     /* Number of LED modes */
+#define NUM_16BIT_MAX   65535
 #define DEBOUNCE_DELAY  20    /* Jitter time (ms) */
+
+#define MAX_CBS   3
+
 
 /* HIGH and LOW for buttons */
 enum
@@ -42,11 +43,20 @@ enum
    HIGH
 };
 
+/* Callback storage */
+typedef struct
+{
+   void* fptr[MAX_CBS];
+   uint8_t num;
+} callback_db_t;
+
+
 /* Error codes */
 typedef enum ec
 {
    ERR_CONFIG = 0,
    ERR_PERIPH,
+   ERR_RUNTIME,
    ERR_GENERC
 } error_code_t;
 
@@ -58,5 +68,32 @@ typedef struct
    uint8_t mask;
    uint8_t stat;
 } button_t;
+
+typedef enum
+{
+   PRESC_1 = 1,
+   PRESC_8 = 8,
+   PRESC_64 = 64,
+   PRESC_256 = 256,
+   PRESC_1024 = 1024,
+   PRESC_INVL = 0
+} timer_presc_t;
+
+void initialize_basic(void);
+
+void throw_error(error_code_t ec);
+
+void startup_pattern_show(void);
+
+void clear_all_leds(void);
+
+void setup_interrupts(void);
+
+timer_presc_t timer_compute_prescaler(uint32_t xd_ms);
+
+int setup_autoreload_timer1(uint32_t delay);
+
+int setup_pcintx(unsigned char pcintx);
+
 
 #endif /* _GLOBALS_H_ */
