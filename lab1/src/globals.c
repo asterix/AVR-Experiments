@@ -22,8 +22,8 @@ void initialize_basic()
    _delay_ms(100);
 
    /* Configure LED pins to output */
-   DDRC |= ((1 << LED_YELLOW)| (1 << LED_EXT2));
-   DDRD |= ((1 << LED_GREEN) | (1 << LED_EXT1));
+   DDRC |= (1 << LED_YELLOW);
+   DDRD |= (1 << LED_GREEN);
 
    /* Configure Button pins to input */
    DDRB &= ~((1 << BUTTON_A) | (1 << BUTTON_C));

@@ -27,9 +27,6 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #define LED_GREEN  PORTD5
 #define LED_RED    PORTB0
 
-#define LED_EXT1   PORTD4
-#define LED_EXT2   PORTC6
-
 #define NUM_16BIT_MAX   65535
 #define DEBOUNCE_DELAY  20    /* Jitter time (ms) */
 

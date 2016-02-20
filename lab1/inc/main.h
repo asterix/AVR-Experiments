@@ -14,6 +14,12 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 -----------------------------------------------------------*/
 #include "globals.h"
 
+
+#define EXT_RED    PORTB4
+#define EXT_YELLOW PORTD6
+#define EXT_GREEN  PORTB6
+
+
 /* Function prototypes */
 void handle_blinking(int where);
 

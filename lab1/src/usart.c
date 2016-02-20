@@ -1,6 +1,5 @@
 /*-----------------------------------------------------------
-- USART based text menu user interface
-- Baud = 9600
+- USART peripheral config/operation interface
 
 - Author:    desai043
 - Created:   17-Feb-2016
@@ -139,6 +138,21 @@ bool usart_manage_trx(usart_stat_t st)
    return result;
 }
 
+/* Polled usart tx */
+void usart_print(const char* txt)
+{
+   char ucsr1b = UCSR1B;
+   usart_1_disable_interrupts();
+
+   while(*txt != '\0')
+   {
+      while(!(UCSR1A & (1 << UDRE1)));
+      UDR1 = *txt++;
+   }
+
+   UCSR1B = ucsr1b;
+}
+
 /* Echo back rx on tx */
 void usart_loopback()
 {
@@ -150,6 +164,12 @@ void usart_1_enable_interrupts()
 {
    UCSR1B |= ((1 << RXCIE1)|(1 << TXCIE1));
 }
+
+void usart_1_disable_interrupts()
+{
+   UCSR1B &= ~((1 << RXCIE1)|(1 << TXCIE1));
+}
+
 
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
@@ -171,6 +191,11 @@ ISR(USART1_RX_vect)
       rx_buf.data[rx_buf.len] == 0x0A)
    {
       rxd_crlf = true;
+      
+      if(usart_cbdb.num > 0)
+      {
+         usart_cbdb[0](rx_buf.data, &len);
+      }
    }
    /* Handle BS or DEL */
    else if(rx_buf.data[rx_buf.len] == 0x08 ||

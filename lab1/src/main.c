@@ -15,6 +15,7 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 #include "main.h"
 #include "usart.h"
+#include "menu_uart.h"
 
 
 /* Globals */
@@ -38,24 +39,17 @@ int main()
    sei();
 
    /* Main loop */
+
+   menu_uart_prompt();
+
    while(1)
-   {
-      /* 0.5Hz */
-     _delay_ms(1000);
-   }
+   {}
+    
 
    return 0;
 }
 
 
-/* Turn OFF all LEDs */
-void clear_all_leds()
-{
-   /* Turn OFF all LEDs */
-   PORTC &= ~((1 << LED_YELLOW) | (1 << LED_EXT2));
-   PORTD |= (1 << LED_GREEN);
-   PORTD &= ~(1 << LED_EXT1);
-}
 
 
 

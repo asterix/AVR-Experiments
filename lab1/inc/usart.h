@@ -54,7 +54,11 @@ bool usart_manage_trx(usart_stat_t st);
 
 void usart_loopback();
 
+void usart_print(const char* txt);
+
 void usart_1_enable_interrupts();
+
+void usart_1_disable_interrupts();
 
 uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
 
