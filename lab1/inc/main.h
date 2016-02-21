@@ -16,12 +16,18 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #define EXT_YELLOW PORTD6
 #define EXT_GREEN  PORTB6
 
+/* Task - Red LED */
+void task_1_toggle_red_led(void);
 
-/* Prototypes */
-
+/* Helpers */
 void initialize_local(void);
+
+void startup_appl(void);
 
 void reset_system_var(void);
 
 void leds_turn_on(void);
 
+void leds_turn_off(void);
+
+uint8_t get_pseudo_rand(uint8_t mod);

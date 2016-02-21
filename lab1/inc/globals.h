@@ -79,6 +79,13 @@ typedef enum
    PRESC_INVL = 0
 } timer_presc_t;
 
+typedef enum
+{
+   TIMER_8BIT  = 256,
+   TIMER_10BIT = 1024,
+   TIMER_16BIT = 65536
+} timer_type_t;
+
 void initialize_basic(void);
 
 void throw_error(error_code_t ec);
@@ -90,7 +97,7 @@ void clear_all_leds(void);
 void setup_interrupts(void);
 
 /* Timers - Max delay possible = 4194.25ms */
-timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt);
+timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ);
 
 bool timer_1_setup_autoreload(uint16_t delay);
 
@@ -105,7 +112,8 @@ void timer_3_interrupt_enable();
 void timer_3_interrupt_disable();
 
 /* Pin Changes */
-int setup_pcintx(unsigned char pcintx);
+bool pcintx_enable_interrupt(unsigned char pcintx);
 
+void pcintx_disable_interrupt(unsigned char pcintx);
 
 #endif /* _GLOBALS_H_ */

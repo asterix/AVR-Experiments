@@ -17,6 +17,8 @@ static bool volatile done = false;
 
 void menu_uart_prompt()
 {
+   uint8_t count = 0;
+   
    /* Start comms */
    usart_manage_trx(U_ENABLE, USART_TRX);
    
@@ -27,8 +29,12 @@ void menu_uart_prompt()
 
    while(!done)
    {
-      usart_print(WAITING_DIALOGUE);
-      _delay_ms(20000);
+      if(count % 40 == 0)
+      {
+         usart_print(WAITING_DIALOGUE);
+      }
+      _delay_ms(500);
+      count++;
    }
 
    /* Remove any callbacks */

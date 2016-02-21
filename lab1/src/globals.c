@@ -63,33 +63,33 @@ void startup_pattern_show()
                 PERIPHERAL CONFIGURATION
 -----------------------------------------------------------*/
 
-timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt)
+timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ)
 {
    timer_presc_t presc = PRESC_INVL;
    float xd_in = (float)1000/xd_ms;
    uint64_t xd = (uint64_t)(F_CPU/xd_in);
 
-   if(xd < NUM_16BIT_MAX)
+   if(xd < typ)
    {
       presc = PRESC_1;
       *tcnt = xd;
    }
-   else if((xd/8) < NUM_16BIT_MAX)
+   else if((xd/8) < typ)
    {
       presc = PRESC_8;
       *tcnt = xd/8;
    }
-   else if((xd/64) < NUM_16BIT_MAX)
+   else if((xd/64) < typ)
    {
       presc = PRESC_64;
       *tcnt = xd/64;
    }
-   else if((xd/256) < NUM_16BIT_MAX)
+   else if((xd/256) < typ)
    {
       presc = PRESC_256;
       *tcnt = xd/256;
    }
-   else if((xd/1024) < NUM_16BIT_MAX)
+   else if((xd/1024) < typ)
    {
       presc = PRESC_1024;
       *tcnt = xd/1024;
@@ -107,7 +107,7 @@ bool timer_1_setup_autoreload(uint16_t delay)
 {
    uint16_t tcnt;
    /* Compute the load count */
-   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt);
+   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_16BIT);
    
    if(presc != PRESC_INVL)
    {
@@ -120,7 +120,7 @@ bool timer_1_setup_autoreload(uint16_t delay)
       TCCR1A &= ~((1 << WGM11) | (1 << WGM10));
 
       /* Load compare TOP count */
-      OCR1A = tcnt;
+      OCR1A = tcnt - 1;
 
       /* Interrupts for Timer 1 */
       TIMSK1 |= (1 << OCIE1A);
@@ -175,7 +175,7 @@ bool timer_3_setup_autoreload(uint16_t delay)
 {
    uint16_t tcnt;
    /* Compute the load count */
-   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt);
+   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_16BIT);
 
    if(presc != PRESC_INVL)
    {
@@ -188,7 +188,7 @@ bool timer_3_setup_autoreload(uint16_t delay)
       TCCR3A &= ~((1 << WGM31) | (1 << WGM30));
 
       /* Load compare TOP count */
-      OCR3A = tcnt;
+      OCR3A = tcnt - 1;
 
       /* Interrupts for Timer 3 */
       TIMSK3 |= (1 << OCIE3A);
@@ -239,9 +239,9 @@ void timer_3_interrupt_disable()
 
 
 /* Setup the PCINTx interrupts */
-int setup_pcintx(unsigned char pcintx)
+bool pcintx_enable_interrupt(unsigned char pcintx)
 {
-   int result = 1;
+   bool result = true;
 
    /* Enable PCINT globally */
    PCICR |= (1 << PCIE0);
@@ -263,6 +263,23 @@ int setup_pcintx(unsigned char pcintx)
    }
    
    return result;
+}
+
+void pcintx_disable_interrupt(unsigned char pcintx)
+{
+   /* Disable PCINT globally */
+   PCICR &= ~(1 << PCIE0);
+
+   /* Mask the requested PCINTx */
+   if(pcintx <= PCINT7)
+   {
+      PCMSK0 &= ~(1 << pcintx);
+   }
+   else
+   {
+      /* Unknown PCINTx requested */
+      throw_error(ERR_CONFIG);
+   }
 }
 
 
