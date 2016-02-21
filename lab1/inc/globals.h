@@ -15,6 +15,7 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 #define F_CPU 16000000
 
+#include <stdbool.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -34,16 +35,18 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 
 /* HIGH and LOW for buttons */
-enum
+typedef enum
 {
    LOW = 0,
    HIGH
-};
+} button_stat_t;
+
+typedef void (*uart_cb_t)(char*, uint8_t*);
 
 /* Callback storage */
 typedef struct
 {
-   void* fptr[MAX_CBS];
+   uart_cb_t fptr[MAX_CBS];
    uint8_t num;
 } callback_db_t;
 
@@ -86,10 +89,22 @@ void clear_all_leds(void);
 
 void setup_interrupts(void);
 
-timer_presc_t timer_compute_prescaler(uint32_t xd_ms);
+/* Timers - Max delay possible = 4194.25ms */
+timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt);
 
-int setup_autoreload_timer1(uint32_t delay);
+bool timer_1_setup_autoreload(uint16_t delay);
 
+void timer_1_interrupt_enable();
+
+void timer_1_interrupt_disable();
+
+bool timer_3_setup_autoreload(uint16_t delay);
+
+void timer_3_interrupt_enable();
+
+void timer_3_interrupt_disable();
+
+/* Pin Changes */
 int setup_pcintx(unsigned char pcintx);
 
 

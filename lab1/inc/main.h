@@ -1,8 +1,5 @@
 /*-----------------------------------------------------------
 - Pseudo-task scheduler
-- UART based menu
-- 
-
 
 Author:    desai043
 Created:   17-Feb-2016
@@ -20,7 +17,11 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #define EXT_GREEN  PORTB6
 
 
-/* Function prototypes */
-void handle_blinking(int where);
+/* Prototypes */
 
+void initialize_local(void);
+
+void reset_system_var(void);
+
+void leds_turn_on(void);
 

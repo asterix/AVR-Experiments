@@ -1,8 +1,5 @@
 /*-----------------------------------------------------------
 - Pseudo-task scheduler
-- UART based menu
-- 
-
 
 Author:    desai043
 Created:   17-Feb-2016
@@ -19,29 +16,32 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 
 /* Globals */
-unsigned int tcounter = 0, button_a = 0, button_c = 0;
-unsigned char button_a_stat = LOW, button_c_stat = HIGH;
+volatile uint64_t time_ms;
+volatile button_stat_t button_a_stat;
 
+/* System vars re-init */
+void reset_system_vars()
+{
+   time_ms = 0;
+   button_a_stat = HIGH;
+}
 
 
 /* Main */
 int main()
 { 
-   /* Init ports and pins */
+   /* Init generic */
    initialize_basic();
+
+   /* Init application specific */
+   initialize_local();
 
    usart_setup_configure(USART_DOUBLE_ASYNC);
    
-   /* Setup interrupts */
-   setup_interrupts();
-
    /* Enable interrupts */
    sei();
 
    /* Main loop */
-
-   menu_uart_prompt();
-
    while(1)
    {}
     
@@ -52,34 +52,55 @@ int main()
 
 
 
-
-
 /* Configure interrupts */
-void setup_interrupts()
+void initialize_local()
 {
-   int result = 1;
    /* Setup PCINTx interrupts for buttons */
-   result = setup_pcintx(PCINT3);
-   usart_1_enable_interrupts();
+   bool result = setup_pcintx(PCINT3);
 
    if(result)
    {
-      result = setup_pcintx(PCINT0);
+      /* Enable UART rx/tx interrupts */
+      result = usart_1_enable_interrupts();
    }
 
-   /* Timer 1 - 250ms interrupt generator */
    if(result)
    {
-      setup_autoreload_timer1(250);
+      /* Timer 1 - 1ms */
+      result = timer_1_setup_autoreload(1);
    }
 
    if(!result)
    {
       throw_error(ERR_CONFIG);
    }
+   
+   /* Startup showoff */
+   if(result)
+   {
+      leds_turn_on();
+      _delay_ms(1000);
+      leds_turn_off();
+   }
 }
 
+void leds_turn_on()
+{
+   PORTB |= (1 << EXT_RED);
+   PORTB |= (1 << EXT_GREEN);
+   PORTD |= (1 << EXT_YELLOW);
+   PORTC |= (1 << LED_YELLOW);
+   PORTD &= ~(1 << LED_GREEN);
+}
 
+void leds_turn_off()
+{
+   PORTB &= ~(1 << EXT_RED);
+   PORTB &= ~(1 << EXT_GREEN);
+   PORTD &= ~(1 << EXT_YELLOW);
+   PORTC &= ~(1 << LED_YELLOW);
+   PORTD |= (1 << LED_GREEN);
+}
 
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
@@ -89,34 +110,41 @@ void setup_interrupts()
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
 {
-   unsigned int button_c_now;
+   button_stat_t button_a_now;
 
    /* Button C */
-   if(PINB & (1 << BUTTON_C))
+   if(PINB & (1 << BUTTON_A))
    {
-      button_c_now = HIGH;
+      button_a_now = HIGH;
    }
    else
    {  
-      button_c_now = LOW;
+      button_a_now = LOW;
    }
 
    /* HIGH -> LOW = Press */
-   if(button_c_stat == HIGH && button_c_now == LOW)
+   if(button_a_stat == HIGH && button_a_now == LOW)
    {
       _delay_ms(DEBOUNCE_DELAY);
       
       /* Sample again */
-      if(!(PINB & (1 << BUTTON_C)))
+      if(!(PINB & (1 << BUTTON_A)))
       {
-          button_c_stat = LOW;
+          button_a_stat = LOW;
       }
    }
    /* LOW -> HIGH = release */
-   else if(button_c_stat == LOW && button_c_now == HIGH)
+   else if(button_a_stat == LOW && button_a_now == HIGH)
    {
       _delay_ms(DEBOUNCE_DELAY);
-      button_c_stat = HIGH;
+      button_a_stat = HIGH;
+
+      /* Halt system */
+      //
+
+      /* Throw experimentation prompt */
+      sei();
+      menu_uart_prompt();
    }
 }
 
@@ -124,7 +152,7 @@ ISR(PCINT0_vect)
 /*ISR - Timer 1 compare A interrupt */
 ISR(TIMER1_COMPA_vect)
 {
-   /* Nothing here */
-   tcounter++;
+   /* time_ms keeper */
+   time_ms++;
 }
 

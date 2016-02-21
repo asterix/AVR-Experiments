@@ -30,6 +30,13 @@ typedef enum
    USART_MASTER_SYNC
 } usart_mode_t;
 
+typedef enum
+{
+   USART_TX = 0,
+   USART_RX,
+   USART_TRX
+} usart_op_t;
+
 typedef struct
 {
    char data[USART_BUFFER_SIZE];
@@ -46,19 +53,21 @@ typedef enum
 
 bool usart_setup_configure(usart_mode_t mode);
 
-void usart_reset_buffers();
+void usart_reset(void);
 
-void usart_start_send();
+void usart_reset_buffers(void);
 
-bool usart_manage_trx(usart_stat_t st);
+void usart_start_send(void);
 
-void usart_loopback();
+bool usart_manage_trx(usart_stat_t st, usart_op_t op);
+
+void usart_loopback(void);
 
 void usart_print(const char* txt);
 
-void usart_1_enable_interrupts();
+bool usart_1_enable_interrupts(void);
 
-void usart_1_disable_interrupts();
+bool usart_1_disable_interrupts(void);
 
 uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
 

@@ -63,31 +63,36 @@ void startup_pattern_show()
                 PERIPHERAL CONFIGURATION
 -----------------------------------------------------------*/
 
-timer_presc_t timer_compute_prescaler(uint32_t xd_ms)
+timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt)
 {
    timer_presc_t presc = PRESC_INVL;
-   float xd_in = 1000 / xd_ms;
-   uint64_t xd = (uint64_t)(F_CPU * xd_in);
+   float xd_in = (float)1000/xd_ms;
+   uint64_t xd = (uint64_t)(F_CPU/xd_in);
 
    if(xd < NUM_16BIT_MAX)
    {
       presc = PRESC_1;
+      *tcnt = xd;
    }
-   else if((xd / 8) < NUM_16BIT_MAX)
+   else if((xd/8) < NUM_16BIT_MAX)
    {
       presc = PRESC_8;
+      *tcnt = xd/8;
    }
-   else if((xd / 64) < NUM_16BIT_MAX)
+   else if((xd/64) < NUM_16BIT_MAX)
    {
       presc = PRESC_64;
+      *tcnt = xd/64;
    }
-   else if((xd / 256) < NUM_16BIT_MAX)
+   else if((xd/256) < NUM_16BIT_MAX)
    {
       presc = PRESC_256;
+      *tcnt = xd/256;
    }
-   else if((xd / 1024) < NUM_16BIT_MAX)
+   else if((xd/1024) < NUM_16BIT_MAX)
    {
       presc = PRESC_1024;
+      *tcnt = xd/1024;
    }
    else
    {
@@ -98,12 +103,13 @@ timer_presc_t timer_compute_prescaler(uint32_t xd_ms)
 }
 
 /* Timer 1 setup */
-int setup_autoreload_timer1(unsigned long int delay)
+bool timer_1_setup_autoreload(uint16_t delay)
 {
+   uint16_t tcnt;
    /* Compute the load count */
-   int result = 1;
+   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt);
    
-   if(result != 0)
+   if(presc != PRESC_INVL)
    {
       /* Set timer count start */
       TCNT1 = 0;
@@ -114,21 +120,121 @@ int setup_autoreload_timer1(unsigned long int delay)
       TCCR1A &= ~((1 << WGM11) | (1 << WGM10));
 
       /* Load compare TOP count */
-      OCR1A = 62500; /* 250ms */
+      OCR1A = tcnt;
 
       /* Interrupts for Timer 1 */
       TIMSK1 |= (1 << OCIE1A);
 
-      /* Select clock source = prescaler 64 - TIMER START */
-      TCCR1B |= ((1 << CS10) | (1 << CS11));
+      /* Select clock source - set prescaler */
+      switch(presc)
+      {
+         case PRESC_1:
+            TCCR1B &= ~((1 << CS12)|(1 << CS11));
+            TCCR1B |= (1 << CS10);
+            break;
+         case PRESC_8:
+            TCCR1B &= ~((1 << CS12)|(1 << CS10));
+            TCCR1B |= (1 << CS11);
+            break;
+         case PRESC_64:
+            TCCR1B &= ~(1 << CS12);
+            TCCR1B |= ((1 << CS10)|(1 << CS11));
+            break;
+         case PRESC_256:
+            TCCR1B |= (1 << CS12);
+            TCCR1B &= ~((1 << CS10)|(1 << CS11));
+            break;
+         case PRESC_1024:
+         default:
+            TCCR1B |= ((1 << CS12)|(1 << CS10));
+            TCCR1B &= ~(1 << CS11);
+      }
    }
-
-   if(!result)
+   else
    {
       throw_error(ERR_CONFIG);
+      return false;
    }
 
-   return result;
+   return true;
+}
+
+void timer_1_interrupt_enable()
+{
+   TIMSK1 |= (1 << OCIE1A);
+}
+
+void timer_1_interrupt_disable()
+{
+   TIMSK1 &= ~(1 << OCIE1A);
+}
+
+
+/* Timer 3 setup */
+bool timer_3_setup_autoreload(uint16_t delay)
+{
+   uint16_t tcnt;
+   /* Compute the load count */
+   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt);
+
+   if(presc != PRESC_INVL)
+   {
+      /* Set timer count start */
+      TCNT3 = 0;
+
+      /* Auto-reload (CTC) mode for Timer 3 */
+      TCCR3B |= (1 << WGM32);
+      TCCR3B &= ~(1 << WGM33);
+      TCCR3A &= ~((1 << WGM31) | (1 << WGM30));
+
+      /* Load compare TOP count */
+      OCR3A = tcnt;
+
+      /* Interrupts for Timer 3 */
+      TIMSK3 |= (1 << OCIE3A);
+
+      /* Select clock source - set prescaler */
+      switch(presc)
+      {
+         case PRESC_1:
+            TCCR3B &= ~((1 << CS32)|(1 << CS31));
+            TCCR3B |= (1 << CS30);
+            break;
+         case PRESC_8:
+            TCCR3B &= ~((1 << CS32)|(1 << CS30));
+            TCCR3B |= (1 << CS31);
+            break;
+         case PRESC_64:
+            TCCR3B &= ~(1 << CS32);
+            TCCR3B |= ((1 << CS30)|(1 << CS31));
+            break;
+         case PRESC_256:
+            TCCR3B |= (1 << CS32);
+            TCCR3B &= ~((1 << CS30)|(1 << CS31));
+            break;
+         case PRESC_1024:
+         default:
+            TCCR3B |= ((1 << CS32)|(1 << CS30));
+            TCCR3B &= ~(1 << CS31);
+      }
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+      return false;
+   }
+
+   return true;
+}
+
+void timer_3_interrupt_enable()
+{
+   TIMSK3 |= (1 << OCIE3A);
+}
+
+void timer_3_interrupt_disable()
+{
+   TIMSK3 &= ~(1 << OCIE3A);
 }
 
 

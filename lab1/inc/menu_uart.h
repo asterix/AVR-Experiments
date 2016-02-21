@@ -15,16 +15,17 @@
 #include "usart.h"
 
 
-#define MENU_OPTIONS " \
- \
+#define MENU_OPTIONS " \r\n\
+\r\n\
 --------------------------------------------------\r\n\
     EXPERIMENTATION MENU \r\n\
 --------------------------------------------------\r\n\
 p        -> print collected experiment data\r\n\
-e <num>  -> Start experiment number <num>\r\n\
+e <num>  -> Setup experiment number <num>\r\n\
 r <num>  -> Set the green LED task to <num> ms\r\n\
 z        -> Reset all experimentation data\r\n\
 g        -> Start the experiment just configured\r\n\
+q        -> Quit menu and go back to normal mode\r\n\
 --------------------------------------------------\r\n"
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
