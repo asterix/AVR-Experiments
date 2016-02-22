@@ -18,7 +18,7 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 
 
 /* Globals */
-volatile uint64_t time_ms, time_100ms;
+volatile uint64_t time_ms, time_100ms, green_led_toggles;
 volatile uint8_t yellow_counter;
 volatile button_stat_t button_a_stat;
 
@@ -26,7 +26,7 @@ volatile button_stat_t button_a_stat;
 void reset_system_vars()
 {
    time_ms = time_100ms = 0;
-   yellow_counter = 0;
+   yellow_counter = green_led_toggles = 0;
    button_a_stat = HIGH;
 }
 
@@ -101,6 +101,12 @@ void initialize_local()
       result = timer_0_setup_autoreload(1);
    }
 
+   /* Timer 1 interrupt */
+   if(result)
+   {
+      timer_1_interrupt_enable('B');
+   }
+
    /* Timer 1 - 100ms = 5Hz @ 50% duty cycle */
    if(result)
    {
@@ -113,7 +119,7 @@ void initialize_local()
       result = timer_3_setup_autoreload(25);
    }
 
-   /* Start USART */
+   /* Start UART */
    if(result)
    {
       result = usart_setup_configure(USART_DOUBLE_ASYNC);
@@ -156,6 +162,14 @@ ISR(TIMER0_COMPA_vect)
    {
       time_100ms = 1;
    }
+}
+
+
+/* Timer 1 compare B interrupt */
+ISR(TIMER1_COMPB_vect)
+{
+   /* Green LED toggles' keeper */
+   green_led_toggles++;
 }
 
 

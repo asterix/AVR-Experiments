@@ -116,9 +116,9 @@ bool timer_1_setup_autoreload(uint16_t delay);
 
 bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc);
 
-void timer_1_interrupt_enable();
+void timer_1_interrupt_enable(char module);
 
-void timer_1_interrupt_disable();
+void timer_1_interrupt_disable(char module);
 
 /* Timer 3 */
 bool timer_3_setup_autoreload(uint16_t delay);

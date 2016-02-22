@@ -327,14 +327,40 @@ bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
 }
 
 
-void timer_1_interrupt_enable()
+void timer_1_interrupt_enable(char module)
 {
-   TIMSK1 |= (1 << OCIE1A);
+   switch(module)
+   {
+      case 'A':
+         TIMSK1 |= (1 << OCIE1A);
+         break;
+      case 'B':
+         TIMSK1 |= (1 << OCIE1B);
+         break;
+      case 'C':
+         TIMSK1 |= (1 << OCIE1C);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
 }
 
-void timer_1_interrupt_disable()
+void timer_1_interrupt_disable(char module)
 {
-   TIMSK1 &= ~(1 << OCIE1A);
+   switch(module)
+   {
+      case 'A':
+         TIMSK1 &= ~(1 << OCIE1A);
+         break;
+      case 'B':
+         TIMSK1 &= ~(1 << OCIE1B);
+         break;
+      case 'C':
+         TIMSK1 &= ~(1 << OCIE1C);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
 }
 
 
