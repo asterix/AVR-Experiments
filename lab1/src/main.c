@@ -13,6 +13,8 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 #include "main.h"
 #include "usart.h"
 #include "menu_uart.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 
 /* Globals */
@@ -40,10 +42,6 @@ int main()
 
    /* Startup */
    startup_appl();
-
-   usart_setup_configure(USART_DOUBLE_ASYNC);
-
-   timer_4_configure_pc_pwm_4b(4, 50);
    
    /* Enable interrupts */
    sei();
@@ -91,28 +89,34 @@ void initialize_local()
    /* Setup PCINTx interrupts for buttons */
    bool result = pcintx_enable_interrupt(PCINT3);
 
+   /* Enable UART rx/tx interrupts */
    if(result)
    {
-      /* Enable UART rx/tx interrupts */
       result = usart_1_enable_interrupts();
    }
 
+   /* Timer 0 - 1ms */
    if(result)
    {
-      /* Timer 0 - 1ms */
       result = timer_0_setup_autoreload(1);
    }
 
+   /* Timer 1 - 100ms = 5Hz @ 50% duty cycle */
    if(result)
    {
-      /* Timer 1 - 1ms */
-      //result = timer_1_setup_autoreload(1);
+      result = timer_1_setup_pfc_pwm(5, 50);
    }
 
+   /* Timer 3 - 25ms */
    if(result)
    {
-      /* Timer 3 - 25ms */
       result = timer_3_setup_autoreload(25);
+   }
+
+   /* Start USART */
+   if(result)
+   {
+      result = usart_setup_configure(USART_DOUBLE_ASYNC);
    }
 
    if(!result)
@@ -138,18 +142,44 @@ void leds_turn_off()
    PORTD |= (1 << LED_GREEN);
 }
 
-/* Generate a pseudo random number using running timers */
-uint8_t get_pseudo_rand(uint8_t mod)
-{
-   uint16_t tcnt1 = TCNT1, tcnt3 = TCNT3;
-   uint8_t rot = (uint8_t)((tcnt1 & tcnt3) & (0x07));
-
-   return (uint8_t)((tcnt1 >> rot) % mod);
-}
 
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
 -----------------------------------------------------------*/
+/* Timer 0 compare A interrupt */
+ISR(TIMER0_COMPA_vect)
+{
+   /* time_ms keeper */
+   time_ms++;
+
+   if(time_ms % 100 == 0)
+   {
+      time_100ms = 1;
+   }
+}
+
+
+/* Timer 3 compare A interrupt */
+ISR(TIMER3_COMPA_vect)
+{
+   /* Yellow LED task keeper */
+   yellow_counter++;
+   
+   /* Yellow LED task */
+   if(yellow_counter % 4 == 0)
+   {
+      PORTD ^= (1 << EXT_YELLOW);
+   }
+
+   /* Jitter LED task */
+   if(rand() % 5 == 4)
+   {
+      PORTC |= (1 << LED_YELLOW);
+      _delay_ms(5);
+      PORTC &= ~(1 << LED_YELLOW);
+   }
+}
+
 
 /* ISR - Pin Change Interrupt */
 /* All PCINTx detections are vectored here */
@@ -195,40 +225,6 @@ ISR(PCINT0_vect)
 
       /* Resume system */
       initialize_local();
-   }
-}
-
-
-/* Timer 0 compare A interrupt */
-ISR(TIMER0_COMPA_vect)
-{
-   /* time_ms keeper */
-   time_ms++;
-
-   if(time_ms % 100 == 0)
-   {
-      time_100ms = 1;
-   }
-}
-
-/* Timer 3 compare A interrupt */
-ISR(TIMER3_COMPA_vect)
-{
-   /* Yellow LED task keeper */
-   yellow_counter++;
-   
-   /* Yellow LED task */
-   if(yellow_counter % 4 == 0)
-   {
-      PORTD ^= (1 << EXT_YELLOW);
-   }
-
-   /* Jitter LED task */
-   if(get_pseudo_rand(5) == 4)
-   {
-      PORTC |= (1 << LED_YELLOW);
-      _delay_ms(5);
-      PORTC &= ~(1 << LED_YELLOW);
    }
 }
 

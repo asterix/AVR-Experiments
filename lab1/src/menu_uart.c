@@ -45,7 +45,7 @@ void menu_uart_prompt()
 /* User input handler - callback */
 void handle_user_inputs(char* buf, uint8_t* len)
 {
-   char op; int num, nargs = 0;
+   char op; double num; int nargs = 0;
    bool result = true;
 
    /* Stop rx to prevent recursive cbs */
@@ -56,7 +56,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
    usart_print("   \r\n");
 
    /* Match with available options/format */
-   nargs = sscanf((const char*)buf, "%c %d", &op, &num);
+   nargs = sscanf((const char*)buf, "%c %lf", &op, &num);
 
    if(nargs >= 1)
    {

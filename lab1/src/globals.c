@@ -88,7 +88,7 @@ void startup_pattern_show()
 timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ)
 {
    timer_presc_t presc = PRESC_INVL;
-   float xd_in = (float)1000/xd_ms;
+   double xd_in = (double)1000/xd_ms;
    uint64_t xd = (uint64_t)(F_CPU/xd_in);
 
    if(xd < typ)
@@ -253,6 +253,80 @@ bool timer_1_setup_autoreload(uint16_t delay)
    return true;
 }
 
+bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
+{
+   bool result = true;
+   
+   /* f(pwm) = f(clk)/[2*prescaler*top] */
+   double t_ms = (1000/(2*freq));
+   uint16_t top;
+
+   /* Compute prescaler */
+   timer_presc_t presc = timer_compute_prescaler(t_ms, &top, TIMER_16BIT);
+
+   if(presc != PRESC_INVL)
+   {
+      /* Set timer count start */
+      TCNT1 = 0;
+
+      /* Timer 1 - phase and freq correct pwm */
+      TCCR1B |= (1 << WGM13);
+      TCCR1B &= ~(1 << WGM12);
+      TCCR1A &= ~((1 << WGM11)|(1 << WGM10));
+
+      /* Load compare TOP count */
+      ICR1 = top;
+
+      /* Allow PWM on OC1B */
+      TCCR1A &= (1 << COM1B0);
+      TCCR1A |= (1 << COM1B1);
+
+      /* Set duty cycle */
+      if(dutycyc >= 0 && dutycyc <=100)
+      {
+         OCR1B = top * (double)dutycyc/100;
+      }
+      else
+      {
+         throw_error(ERR_CONFIG);
+         result = false;
+      }
+
+      /* Select clock source - set prescaler */
+      switch(presc)
+      {
+         case PRESC_1:
+            TCCR1B &= ~((1 << CS12)|(1 << CS11));
+            TCCR1B |= (1 << CS10);
+            break;
+         case PRESC_8:
+            TCCR1B &= ~((1 << CS12)|(1 << CS10));
+            TCCR1B |= (1 << CS11);
+            break;
+         case PRESC_64:
+            TCCR1B &= ~(1 << CS12);
+            TCCR1B |= ((1 << CS10)|(1 << CS11));
+            break;
+         case PRESC_256:
+            TCCR1B |= (1 << CS12);
+            TCCR1B &= ~((1 << CS10)|(1 << CS11));
+            break;
+         case PRESC_1024:
+         default:
+            TCCR1B |= ((1 << CS12)|(1 << CS10));
+            TCCR1B &= ~(1 << CS11);
+      }
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+      result = false;
+   }
+
+   return result;
+}
+
+
 void timer_1_interrupt_enable()
 {
    TIMSK1 |= (1 << OCIE1A);
@@ -332,10 +406,10 @@ void timer_3_interrupt_disable()
 }
 
 /* HS Timer 4 */
-void timer_4_configure_pc_pwm_4b(uint16_t freq, uint8_t dutycyc)
+void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc)
 {
    double xd = (double)64000000/freq;
-   uint16_t top = 0, dcyc;;
+   uint16_t top = 0, dcyc;
 
    /* Set up PLL, High Speed timer clk = 64MHz */
    pll_configure_tclk_source_freq();
@@ -456,12 +530,14 @@ void timer_4_configure_pc_pwm_4b(uint16_t freq, uint8_t dutycyc)
    /* Duty cycle */
    if(dutycyc >= 0 && dutycyc <= 100)
    {
-      dcyc = (dutycyc*top)/100;
+      dcyc = top * (double)dutycyc/100;
       TC4H = (uint8_t)(dcyc >> 8);
       OCR4B = (uint8_t)(dcyc & 0xFF);
    }
    else
    {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42));
+      TCCR4B &= ~((1 << CS41)|(1 << CS40));
       throw_error(ERR_CONFIG);
    }
 }

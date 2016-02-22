@@ -114,6 +114,8 @@ void timer_0_interrupt_disable();
 /* Timer 1 */
 bool timer_1_setup_autoreload(uint16_t delay);
 
+bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc);
+
 void timer_1_interrupt_enable();
 
 void timer_1_interrupt_disable();
@@ -126,7 +128,7 @@ void timer_3_interrupt_enable();
 void timer_3_interrupt_disable();
 
 /* Timer 4 */
-void timer_4_configure_pc_pwm_4b(uint16_t freq, uint8_t dutycyc);
+void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc);
 
 
 /* Pin Changes */
