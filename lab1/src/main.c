@@ -42,6 +42,8 @@ int main()
    startup_appl();
 
    usart_setup_configure(USART_DOUBLE_ASYNC);
+
+   timer_4_configure_pc_pwm_4b(4, 50);
    
    /* Enable interrupts */
    sei();
@@ -58,6 +60,9 @@ int main()
    
    return 0;
 }
+
+
+
 
 /* Task - Red LED */
 void task_1_toggle_red_led()
@@ -94,8 +99,14 @@ void initialize_local()
 
    if(result)
    {
+      /* Timer 0 - 1ms */
+      result = timer_0_setup_autoreload(1);
+   }
+
+   if(result)
+   {
       /* Timer 1 - 1ms */
-      result = timer_1_setup_autoreload(1);
+      //result = timer_1_setup_autoreload(1);
    }
 
    if(result)
@@ -174,7 +185,7 @@ ISR(PCINT0_vect)
       button_a_stat = HIGH;
 
       /* Halt system */
-      timer_1_interrupt_disable();
+      timer_0_interrupt_disable();
       timer_3_interrupt_disable();
       pcintx_disable_interrupt(PCINT3);
 
@@ -188,8 +199,8 @@ ISR(PCINT0_vect)
 }
 
 
-/* Timer 1 compare A interrupt */
-ISR(TIMER1_COMPA_vect)
+/* Timer 0 compare A interrupt */
+ISR(TIMER0_COMPA_vect)
 {
    /* time_ms keeper */
    time_ms++;

@@ -16,6 +16,28 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 /*-----------------------------------------------------------
                     INITIALIZATION
 -----------------------------------------------------------*/
+
+/* PLL frequency setup 96MHz/1.5 = 64MHz */
+void pll_configure_tclk_source_freq()
+{
+   /* Use 8MHz internal RC Osc */
+   PLLFRQ |= (1 << PINMUX);
+
+   /* Timer source divider = 1.5 */
+   PLLFRQ |=  (1 << PLLTM1);
+   PLLFRQ &= ~(1 << PLLTM0);
+
+   /* PLL VCO lock to 96MHz */
+   PLLFRQ |=  ((1 << PDIV3)|(1 << PDIV1));
+   PLLFRQ &= ~((1 << PDIV2)|(1 << PDIV0));
+
+   /* Don't divide by 2 as source = 8MHz*/
+   PLLCSR &= ~(1 << PINDIV);
+
+   /* Enable PLL */
+   PLLCSR |=  (1 << PLLE);
+}
+
 void initialize_basic()
 {
    /* Start up allowance */
@@ -101,6 +123,78 @@ timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type
 
    return presc;
 }
+
+/* Timer 0 setup */
+bool timer_0_setup_autoreload(uint16_t delay)
+{
+   uint16_t tcnt;
+   /* Compute the load count */
+   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_8BIT);
+   
+   if(presc != PRESC_INVL)
+   {
+      /* Set timer count start */
+      TCNT0 = 0;
+
+      /* Disconnect timer output from ports */
+      TCCR0A &= ~((1 << COM0A0)|(1 << COM0A1));
+
+      /* Auto-reload (CTC) mode for Timer 0 */
+      TCCR0B &= ~(1 << WGM02);
+      TCCR0A |= (1 << WGM01);
+      TCCR0A &= ~(1 << WGM00);
+
+      /* Load compare TOP count */
+      OCR0A = (uint8_t)tcnt - 1;
+
+      /* Interrupts for Timer 0 */
+      TIMSK0 |= (1 << OCIE0A);
+
+      /* Select clock source - set prescaler */
+      switch(presc)
+      {
+         case PRESC_1:
+            TCCR0B &= ~((1 << CS02)|(1 << CS01));
+            TCCR0B |= (1 << CS00);
+            break;
+         case PRESC_8:
+            TCCR0B &= ~((1 << CS02)|(1 << CS00));
+            TCCR0B |= (1 << CS01);
+            break;
+         case PRESC_64:
+            TCCR0B &= ~(1 << CS02);
+            TCCR0B |= ((1 << CS00)|(1 << CS01));
+            break;
+         case PRESC_256:
+            TCCR0B |= (1 << CS02);
+            TCCR0B &= ~((1 << CS00)|(1 << CS01));
+            break;
+         case PRESC_1024:
+         default:
+            TCCR0B |= ((1 << CS02)|(1 << CS00));
+            TCCR0B &= ~(1 << CS01);
+      }
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+      return false;
+   }
+
+   return true;
+}
+
+void timer_0_interrupt_enable()
+{
+   TIMSK0 |= (1 << OCIE0A);
+}
+
+void timer_0_interrupt_disable()
+{
+   TIMSK0 &= ~(1 << OCIE0A);
+}
+
+
 
 /* Timer 1 setup */
 bool timer_1_setup_autoreload(uint16_t delay)
@@ -235,6 +329,141 @@ void timer_3_interrupt_enable()
 void timer_3_interrupt_disable()
 {
    TIMSK3 &= ~(1 << OCIE3A);
+}
+
+/* HS Timer 4 */
+void timer_4_configure_pc_pwm_4b(uint16_t freq, uint8_t dutycyc)
+{
+   double xd = (double)64000000/freq;
+   uint16_t top = 0, dcyc;;
+
+   /* Set up PLL, High Speed timer clk = 64MHz */
+   pll_configure_tclk_source_freq();
+
+   /* Non-inverting PWM */
+   TCCR4A |= (1 << COM4B1);
+   TCCR4A &= ~(1 << COM4B0);
+
+   /* Using OCR4B */
+   TCCR4A |= (1 << PWM4B);
+
+   /* Phase-corrected PWM */
+   TCCR4D &= ~(1 << WGM41);
+   TCCR4D |= (1 << WGM40);
+
+   /* Set HS-tclk divider */
+   if(xd/1 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42)|(1 << CS41));
+      TCCR4B |= (1 << CS40);
+      top = xd;
+   }
+   else if(xd/2 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42)|(1 << CS40));
+      TCCR4B |= (1 << CS41);
+      top = xd/2;
+   }
+   else if(xd/4 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42));
+      TCCR4B |= (1 << CS41);
+      TCCR4B |= (1 << CS40);
+      top = xd/4;
+   }
+   else if(xd/8 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42));
+      TCCR4B |= ((1 << CS41)|(1 << CS40));
+      top = xd/4;
+   }
+   else if(xd/16 < TIMER_10BIT)
+   {
+      TCCR4B |= (1 << CS42);
+      TCCR4B &= ~((1 << CS43)|(1 << CS41)|(1 << CS40));
+      top = xd/16;
+   }
+   else if(xd/32 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS41));
+      TCCR4B |= ((1 << CS42)|(1 << CS40));
+      top = xd/32;
+   }
+   else if(xd/64 < TIMER_10BIT)
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS40));
+      TCCR4B |= ((1 << CS42)|(1 << CS41));
+      top = xd/64;
+   }
+   else if(xd/128 < TIMER_10BIT)
+   {
+      TCCR4B &= ~(1 << CS43);
+      TCCR4B |= ((1 << CS42)|(1 << CS41)|(1 << CS40));
+      top = xd/128;
+   }
+   else if(xd/256 < TIMER_10BIT)
+   {
+      TCCR4B |= (1 << CS43);
+      TCCR4B &= ~((1 << CS42)|(1 << CS41)|(1 << CS40));
+      top = xd/256;
+   }
+   else if(xd/512 < TIMER_10BIT)
+   {
+      TCCR4B |= ((1 << CS43)|(1 << CS40));
+      TCCR4B &= ~((1 << CS42)|(1 << CS41));
+      top = xd/512;
+   }
+   else if(xd/1024 < TIMER_10BIT)
+   {
+      TCCR4B &= ~(1 << CS42);
+      TCCR4B |= ((1 << CS43)|(1 << CS41)|(1 << CS40));
+      top = xd/1024;
+   }
+   else if(xd/2048 < TIMER_10BIT)
+   {
+      TCCR4B |= ((1 << CS43)|(1 << CS42));
+      TCCR4B &= ~((1 << CS41)|(1 << CS40));
+      top = xd/2048;
+   }
+   else if(xd/4096 < TIMER_10BIT)
+   {
+      TCCR4B |= ((1 << CS43)|(1 << CS42)|(1 << CS40));
+      TCCR4B &= ~(1 << CS41);
+      top = xd/4096;
+   }
+   else if(xd/8192 < TIMER_10BIT)
+   {
+      TCCR4B |= ((1 << CS43)|(1 << CS42)|(1 << CS41));
+      TCCR4B &= ~(1 << CS40);
+      top = xd/8192;
+   }
+   else if(xd/16384 < TIMER_10BIT)
+   {
+      TCCR4B |= ((1 << CS43)|(1 << CS42));
+      TCCR4B |= ((1 << CS41)|(1 << CS40));
+      top = xd/16384;
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+   }
+
+   /* High 2-bits of 10-bit number */
+   TC4H = (uint8_t)(top >> 8);
+   /* Low 8-bits of 10-bit number */
+   OCR4C = (uint8_t)(top & 0xFF);
+
+   /* Duty cycle */
+   if(dutycyc >= 0 && dutycyc <= 100)
+   {
+      dcyc = (dutycyc*top)/100;
+      TC4H = (uint8_t)(dcyc >> 8);
+      OCR4B = (uint8_t)(dcyc & 0xFF);
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+   }
 }
 
 

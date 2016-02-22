@@ -86,6 +86,11 @@ typedef enum
    TIMER_16BIT = 65536
 } timer_type_t;
 
+
+/* Prototypes*/
+
+void pll_configure_tclk_source_freq(void);
+
 void initialize_basic(void);
 
 void throw_error(error_code_t ec);
@@ -99,17 +104,30 @@ void setup_interrupts(void);
 /* Timers - Max delay possible = 4194.25ms */
 timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ);
 
+/* Timer 0 */
+bool timer_0_setup_autoreload(uint16_t delay);
+
+void timer_0_interrupt_enable();
+
+void timer_0_interrupt_disable();
+
+/* Timer 1 */
 bool timer_1_setup_autoreload(uint16_t delay);
 
 void timer_1_interrupt_enable();
 
 void timer_1_interrupt_disable();
 
+/* Timer 3 */
 bool timer_3_setup_autoreload(uint16_t delay);
 
 void timer_3_interrupt_enable();
 
 void timer_3_interrupt_disable();
+
+/* Timer 4 */
+void timer_4_configure_pc_pwm_4b(uint16_t freq, uint8_t dutycyc);
+
 
 /* Pin Changes */
 bool pcintx_enable_interrupt(unsigned char pcintx);
