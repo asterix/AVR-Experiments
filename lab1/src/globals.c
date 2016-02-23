@@ -266,6 +266,9 @@ bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
 
    if(presc != PRESC_INVL)
    {
+      /* Stop timer */
+      TCCR1B &= ~((1 << CS12)|(1 << CS11)|(1 << CS10));
+
       /* Set timer count start */
       TCNT1 = 0;
 
@@ -645,7 +648,7 @@ void throw_error(error_code_t ec)
    }
 
    /* Turn red LED ON and hang */
-   PORTB |= (1 << LED_RED);
+   PORTB &= ~(1 << LED_RED);
    while(1);
 }
 

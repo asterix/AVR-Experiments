@@ -10,7 +10,7 @@ SRC     = src
 OBJ     = obj
 
 ## Compiler specific ##
-CC      = avr-gcc
+CC      = avr-gcc -std=c11
 CFLAGS  = -g -Wall -MMD -I${INC} -mcall-prologues -mmcu=$(MCU) -Os
 
 ## Object copy specific ##
@@ -18,6 +18,7 @@ OBJCPY  = avr-objcopy
 OCFLAGS = -R .eeprom -O ihex
 
 ## Linker specific ##
+LPATHS  = /usr/lib/avr/lib/
 LDFLAGS = -Wl,-gc-sections -Wl,-relax
 
 ## Target ##
@@ -28,7 +29,8 @@ VPATH   = src
 SRCS    = main.c \
           globals.c \
           usart.c \
-          menu_uart.c
+          menu_uart.c \
+          hough_gray.c
 
 OBJS    = $(addprefix $(OBJ)/,$(subst .c,.o,$(SRCS)))
 
