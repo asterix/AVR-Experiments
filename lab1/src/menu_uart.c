@@ -1,14 +1,24 @@
-/*-----------------------------------------------------------
-- UART based text menu user interface
+/*---------------------------------------------------------------------------
+  
+Copyright (c) 2016, Vaibhav Desai
 
-- Author:    desai043
-- Created:   19-Feb-2016
-- Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
-             Controller LV with Raspberry Pi Bridge
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-           Note: LFUSE = 0xFF, HFUSE = 0xD0
-           XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
------------------------------------------------------------*/
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------------------------------------------------------------------------
+Function:  UART based text menu user interface
+Created:   19-Feb-2016
+Hardware:  ATMega32U4 
+---------------------------------------------------------------------------*/
 
 #include "menu_uart.h"
 #include <stdio.h>
@@ -17,7 +27,7 @@
 static bool volatile done = false;
 
 /* Experimentation data */
-volatile exp_db_t exp_db;
+static volatile exp_db_t exp_db;
 
 /* Shared data */
 shared_data_t shared_data;
@@ -35,32 +45,33 @@ void exp_db_reset()
    for(int i = 0; i < NUM_TASKS; i++)
    {
       exp_db.task[i].missed_deadlines = 0;
+      exp_db.task[i].times_run = 0;
       
       switch(i)
       {
          case TSK_TKEEPER:
-            strcpy((char *)exp_db.task[i].name, "1: Time keeper task: ");
+            strcpy((char *)exp_db.task[i].name, "1: Time keeper task:\t");
             break;
          case TSK_COMM:
-            strcpy((char *)exp_db.task[i].name, "2: Comm task: ");
+            strcpy((char *)exp_db.task[i].name, "2: Communication task:\t");
             break;
          case TSK_REDLED:
-            strcpy((char *)exp_db.task[i].name, "3: Red LED task: ");
+            strcpy((char*)exp_db.task[i].name, "3: Red LED task:\t");
             break;
          case TSK_YELOLED:
-            strcpy((char *)exp_db.task[i].name, "4: Yellow LED task: ");
+            strcpy((char*)exp_db.task[i].name, "4: Yellow LED task:\t");
             break;
          case TSK_JITTER:
-            strcpy((char *)exp_db.task[i].name, "5: Jitter LED task: ");
+            strcpy((char*)exp_db.task[i].name, "5: Jitter LED task:\t");
             break;
          case TSK_GRNLED:
-            strcpy((char *)exp_db.task[i].name, "6: Green LED task: ");
+            strcpy((char*)exp_db.task[i].name, "6: Green LED task:\t");
             break;
          case TSK_GRNCNT:
-            strcpy((char *)exp_db.task[i].name, "7: Green count task: ");
+            strcpy((char*)exp_db.task[i].name, "7: Green count task:\t");
             break;
          case TSK_HTRNSF:
-            strcpy((char *)exp_db.task[i].name, "8: Hough trans task: ");
+            strcpy((char*)exp_db.task[i].name, "8: Hough trans task:\t");
             break;
          default:
             throw_error(ERR_RUNTIME);
@@ -73,16 +84,25 @@ void exp_db_reset()
 void exp_db_print()
 {
    char numbuf[20];
-   usart_print("Experimentation data - Missed deadlines: \r\n");
-   
-   usart_print("Time run (ms): ");
-   sprintf(numbuf, "%u", exp_db.time_to_run);
+   usart_print("Experiment number: ");
+   sprintf(numbuf, "%u", exp_db.exp);
    usart_print(numbuf);
-   usart_print("  \r\n");
+   
+   usart_print(", Experimentation time (ms): ");
+   sprintf(numbuf, "%u", (exp_db.time_to_run - exp_db.time_to_finish));
+   usart_print(numbuf);
+   usart_print("  \r\n  \r\n");
 
    for(int i = 0; i < NUM_TASKS; i++)
    {
-      usart_print((char *)exp_db.task[i].name);
+      usart_print((char*)exp_db.task[i].name);
+
+      usart_print("times run: ");
+      sprintf(numbuf, "%u", exp_db.task[i].times_run);
+      usart_print(numbuf);
+      usart_print("\t");
+
+      usart_print("|   missed deadlines: ");
       sprintf(numbuf, "%u", exp_db.task[i].missed_deadlines);
       usart_print(numbuf);
       usart_print("  \r\n");
@@ -98,10 +118,44 @@ void exp_start()
 }
 
 
+/* Add to number of times run */
+void exp_task_run(task_name_t tsk)
+{
+   if(exp_db.running)
+      exp_db.task[tsk].times_run++;
+}
+
+
+/* Add to missed deadlines */
+void exp_task_missed_deadline(task_name_t tsk)
+{
+   if(exp_db.running)
+      exp_db.task[tsk].missed_deadlines++;
+}
+
+
+/* Manage experimentation timing */
+void exp_time_tick_ms()
+{
+   if(exp_db.running)
+   {
+      if(exp_db.time_to_finish > 0)
+      {
+         exp_db.time_to_finish--;
+      }
+      else
+      {
+         exp_db.running = false;
+      }
+   }
+}
+
 /* Menu mode */
 void menu_uart_prompt()
 {
    uint8_t count = 0;
+   /* Clear buffers */
+   usart_reset_buffers();
    
    /* Start comms */
    usart_manage_trx(U_ENABLE, USART_TRX);

@@ -1,14 +1,28 @@
-/*-----------------------------------------------------------
-- Pseudo-task scheduler
+/*---------------------------------------------------------------------------
+  
+Copyright (c) 2016, Vaibhav Desai
 
-Author:    desai043
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------------------------------------------------------------------------
+Function:  Pseudo task scheduling experiment runner
 Created:   17-Feb-2016
-Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
-           Controller LV with Raspberry Pi Bridge
+Hardware:  ATMega32U4 
 
-           Note: LFUSE = 0xFF, HFUSE = 0xD0
-           XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
------------------------------------------------------------*/
+Note: LFUSE = 0xFF, HFUSE = 0xD0
+      XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
+
+---------------------------------------------------------------------------*/
 
 #include "main.h"
 
@@ -17,7 +31,7 @@ Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
 volatile uint64_t time_ms, green_led_toggles;
 volatile uint8_t yellow_counter;
 volatile bool run_htransform, run_toggle_red;
-volatile button_stat_t button_a_stat;
+volatile button_t button_a;
 
 
 /* Main */
@@ -46,6 +60,9 @@ int main()
       if(run_toggle_red)
       {
          task_1_toggle_red_led();
+         
+         /* Exp? */
+         exp_task_run(TSK_REDLED);
          run_toggle_red = false;
       }
 
@@ -56,7 +73,9 @@ int main()
          {
             hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
          }
-       
+
+         /* Exp? */
+         exp_task_run(TSK_HTRNSF);
          run_htransform = false;
       }
    }
@@ -71,12 +90,18 @@ void reset_system_vars()
    time_ms = 0;
    yellow_counter = green_led_toggles = 0;
    run_htransform = run_toggle_red = false;
-   button_a_stat = HIGH;
+   
+   /* Setup Button A */
+   button_a.name = 'A';
+   button_a.port = (uint8_t*)((uint16_t)PINB);
+   button_a.mask = (1 << BUTTON_A);
+   button_a.stat = HIGH;
 
-   /* Default shared data */
+   /* Default config/shared data */
    shared_data.mod_red_led = 100;
    shared_data.mod_yelo_led = 4;
    shared_data.mod_h_trnsf = 100;
+   timer_1_setup_pfc_pwm(5, 50);
 }
 
 
@@ -182,26 +207,17 @@ ISR(TIMER0_COMPA_vect)
    /* time_ms keeper */
    time_ms++;
 
-   /* Manage experimentation timing */
-   if(exp_db.running)
-   {
-      if(exp_db.time_to_finish > 0)
-      {
-         exp_db.time_to_finish--
-      }
-      else
-      {
-         exp_db.running = false;
-      }
-   }
+   /* Exp? */
+   exp_time_tick_ms();
+   exp_task_run(TSK_TKEEPER);
 
    /* Red LED task release? */
    if(time_ms % shared_data.mod_red_led == 0)
    {
       /* Missed deadline? */
-      if(run_toggle_red == true)
+      if(run_toggle_red)
       {
-         exp_db.task[TSK_REDLED].missed_deadlines++;
+         exp_task_missed_deadline(TSK_REDLED);
       }
       run_toggle_red = true;
    }
@@ -210,9 +226,9 @@ ISR(TIMER0_COMPA_vect)
    if(time_ms % shared_data.mod_h_trnsf == 0)
    {
       /* Missed deadline? */
-      if(run_htransform == true)
+      if(run_htransform)
       {
-         exp_db.task[TSK_HTRNSF].missed_deadlines++;
+         exp_task_missed_deadline(TSK_HTRNSF);
       }
       run_htransform = true;
    }
@@ -222,6 +238,10 @@ ISR(TIMER0_COMPA_vect)
 /* Timer 1 compare B interrupt */
 ISR(TIMER1_COMPB_vect)
 {
+   /* Exp? */
+   exp_task_run(TSK_GRNLED);
+   exp_task_run(TSK_GRNCNT);
+
    /* Green LED toggles' keeper */
    green_led_toggles++;
 }
@@ -236,12 +256,17 @@ ISR(TIMER3_COMPA_vect)
    /* Yellow LED task */
    if(yellow_counter % shared_data.mod_yelo_led == 0)
    {
+      /* Exp? */
+      exp_task_run(TSK_YELOLED);
       PORTD ^= (1 << EXT_YELLOW);
    }
 
    /* Jitter LED task */
    if(rand() % 5 == 4)
    {
+      /* Exp? */
+      exp_task_run(TSK_JITTER);
+
       PORTC |= (1 << LED_YELLOW);
       _delay_ms(5);
       PORTC &= ~(1 << LED_YELLOW);
@@ -255,8 +280,8 @@ ISR(PCINT0_vect)
 {
    button_stat_t button_a_now;
 
-   /* Button C */
-   if(PINB & (1 << BUTTON_A))
+   /* Button A */
+   if(*button_a.port & button_a.mask)
    {
       button_a_now = HIGH;
    }
@@ -266,26 +291,29 @@ ISR(PCINT0_vect)
    }
 
    /* HIGH -> LOW = Press */
-   if(button_a_stat == HIGH && button_a_now == LOW)
+   if(button_a.stat == HIGH && button_a_now == LOW)
    {
       _delay_ms(DEBOUNCE_DELAY);
       
       /* Sample again */
-      if(!(PINB & (1 << BUTTON_A)))
+      if(!(*button_a.port & button_a.mask))
       {
-          button_a_stat = LOW;
+          button_a.stat = LOW;
       }
    }
    /* LOW -> HIGH = release */
-   else if(button_a_stat == LOW && button_a_now == HIGH)
+   else if(button_a.stat == LOW && button_a_now == HIGH)
    {
       _delay_ms(DEBOUNCE_DELAY);
-      button_a_stat = HIGH;
+      button_a.stat = HIGH;
 
       /* Halt system */
       timer_0_interrupt_disable();
       timer_3_interrupt_disable();
       pcintx_disable_interrupt(PCINT3);
+
+      /* Exp? */
+      exp_task_run(TSK_COMM);
 
       /* Throw experimentation prompt */
       sei();

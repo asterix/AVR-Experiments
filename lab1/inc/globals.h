@@ -1,15 +1,25 @@
-/*-----------------------------------------------------------
-- Global common definitions, types, provisions
-- Exception handlers
+/*---------------------------------------------------------------------------
+  
+Copyright (c) 2016, Vaibhav Desai
 
-Author:    desai043
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------------------------------------------------------------------------
+Function:  Common peripheral configuration, helpers' interface
 Created:   17-Feb-2016
-Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
-           Controller LV with Raspberry Pi Bridge
+Hardware:  ATMega32U4 
+---------------------------------------------------------------------------*/
 
-           Note: LFUSE = 0xFF, HFUSE = 0xD0
-           XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
------------------------------------------------------------*/
 #ifndef _GLOBALS_H_
 #define _GLOBALS_H_
 
@@ -66,7 +76,7 @@ typedef struct
    char name;
    uint8_t *port;
    uint8_t mask;
-   uint8_t stat;
+   button_stat_t stat;
 } button_t;
 
 typedef enum
@@ -120,12 +130,14 @@ void timer_1_interrupt_enable(char module);
 
 void timer_1_interrupt_disable(char module);
 
+
 /* Timer 3 */
 bool timer_3_setup_autoreload(uint16_t delay);
 
 void timer_3_interrupt_enable();
 
 void timer_3_interrupt_disable();
+
 
 /* Timer 4 */
 void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc);
