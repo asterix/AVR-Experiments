@@ -69,7 +69,7 @@ void exp_db_reset()
    exp_db.time_to_run = 0;
    exp_db.time_to_finish = 0;
 
-   reset_system_vars();
+   reset_system_data_default();
    
    for(int i = 0; i < NUM_TASKS; i++)
    {

@@ -34,7 +34,7 @@ Hardware:  ATMega32U4
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
-extern void reset_system_vars(void);
+extern void reset_system_data_default();
 
 typedef enum
 {

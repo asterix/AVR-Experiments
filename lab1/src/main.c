@@ -75,10 +75,10 @@ int main()
          }
          _delay_ms(55);
 
-         //sprintf(dbgbuf, "%u", run_htransform);
-         //usart_print("htrans: ");
-         //usart_print((const char*)dbgbuf);
-         //usart_print("  \r\n");
+         sprintf(dbgbuf, "%u", run_htransform);
+         usart_print("htrans: ");
+         usart_print((const char*)dbgbuf);
+         usart_print("  \r\n");
 
          /* Exp? */
          exp_task_run(TSK_HTRNSF);
@@ -89,25 +89,33 @@ int main()
    return 0;
 }
 
-
-/* System vars re-init */
-void reset_system_vars()
+/* Default startup config */
+void reset_system_data_default()
 {
    time_ms = 0;
-   yellow_counter = green_led_toggles = 0;
-   run_htransform = run_toggle_red = 0;
-   
-   /* Setup Button A */
-   button_a.name = 'A';
-   button_a.port = (uint8_t*)(&PINB);
-   button_a.mask = (1 << BUTTON_A);
-   button_a.stat = HIGH;
+   yellow_counter = 0;
+   green_led_toggles = 0;
 
    /* Default config/shared data */
    shared_data.mod_red_led = 100;
    shared_data.mod_yelo_led = 4;
    shared_data.mod_h_trnsf = 100;
    timer_1_setup_pfc_pwm(5, 50);
+}
+
+/* System vars re-init */
+void reset_system_vars()
+{
+   reset_system_data_default();
+   
+   run_htransform = 0;
+   run_toggle_red = 0;
+   
+   /* Setup Button A */
+   button_a.name = 'A';
+   button_a.port = (uint8_t*)(&PINB);
+   button_a.mask = (1 << BUTTON_A);
+   button_a.stat = HIGH;
 }
 
 
@@ -147,6 +155,12 @@ void initialize_local()
       result = usart_1_enable_interrupts();
    }
 
+   /* Initialize USART for communication */
+   if(result)
+   {
+      result = usart_setup_configure(USART_DOUBLE_ASYNC);
+   }
+
    /* Timer 0 - 1ms auto-reload */
    if(result)
    {
@@ -169,12 +183,6 @@ void initialize_local()
    if(result)
    {
       result = timer_3_setup_autoreload(25);
-   }
-
-   /* Initialize USART for communication */
-   if(result)
-   {
-      result = usart_setup_configure(USART_DOUBLE_ASYNC);
    }
 
    if(!result)
