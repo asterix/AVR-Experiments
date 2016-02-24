@@ -89,11 +89,11 @@ void reset_system_vars()
 {
    time_ms = 0;
    yellow_counter = green_led_toggles = 0;
-   run_htransform = run_toggle_red = false;
+   run_htransform = run_toggle_red = 0;
    
    /* Setup Button A */
    button_a.name = 'A';
-   button_a.port = (uint8_t*)((uint16_t)PINB);
+   button_a.port = (uint8_t*)(&PINB);
    button_a.mask = (1 << BUTTON_A);
    button_a.stat = HIGH;
 
@@ -116,19 +116,17 @@ void task_1_toggle_red_led()
 -----------------------------------------------------------*/
 void startup_appl()
 {
-   /* Clear all vars */
-   reset_system_vars();
-
    /* Set port directions */
    DDRB |= ((1 << EXT_RED)|(1 << EXT_GREEN));
    DDRD |= (1 << EXT_YELLOW);
 
    /* Startup show */
    leds_turn_on();
-
    _delay_ms(1000);
-   
    leds_turn_off();
+
+   /* Clear all vars */
+   reset_system_vars();
 }
 
 /* Configure interrupts */

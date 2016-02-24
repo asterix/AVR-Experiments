@@ -74,7 +74,7 @@ typedef enum ec
 typedef struct
 {
    char name;
-   uint8_t *port;
+   volatile uint8_t *port;
    uint8_t mask;
    button_stat_t stat;
 } button_t;

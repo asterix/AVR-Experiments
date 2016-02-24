@@ -64,7 +64,7 @@ uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
 
    if(usart_cbdb.num >= MAX_CBS)
    {
-      throw_error(ERR_PERIPH);
+      throw_error(ERR_RUNTIME);
    }
 
    for(i = 0; i < MAX_CBS; i++)
@@ -72,11 +72,10 @@ uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
       if(usart_cbdb.fptr[i] == NULL)
       {
          usart_cbdb.fptr[i] = cb;
+         usart_cbdb.num++;
          break;
       }
    }
-
-   usart_cbdb.num++;
    return i;
 }
 
