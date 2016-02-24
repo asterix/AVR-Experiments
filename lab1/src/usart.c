@@ -21,6 +21,7 @@ Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
 #include "usart.h"
+#include <stdlib.h>
 
 /* USART buffers */
 static ubuffer_t rx_buf;
@@ -36,6 +37,10 @@ void usart_reset()
    rx_buf.len = rx_buf.idx = 0;
 
    usart_cbdb.num = 0;
+   for(int i = 0; i < MAX_CBS; i++)
+   {
+      usart_cbdb.fptr[i] = NULL;
+   }
 }
 
 /* Reset rx/tx buffers */
@@ -55,19 +60,30 @@ void usart_start_send()
 /* Callback registration */
 uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
 {
+   int i = 0;
+
    if(usart_cbdb.num >= MAX_CBS)
    {
       throw_error(ERR_PERIPH);
    }
 
-   usart_cbdb.fptr[usart_cbdb.num] = cb;
-   return usart_cbdb.num++;
+   for(i = 0; i < MAX_CBS; i++)
+   {
+      if(usart_cbdb.fptr[i] == NULL)
+      {
+         usart_cbdb.fptr[i] = cb;
+         break;
+      }
+   }
+
+   usart_cbdb.num++;
+   return i;
 }
 
 /* Remove a registered callback */
 void usart_deregister_cb(uint8_t cbnum)
 {
-   // TODO - rearrange cbdb
+   usart_cbdb.fptr[cbnum] = NULL;
    usart_cbdb.num--;
 }
 
@@ -227,11 +243,12 @@ ISR(USART1_RX_vect)
       /* Invoke all registered callbacks */
       if(usart_cbdb.num > 0)
       {
-         uint8_t i = 0;
-         while(i < usart_cbdb.num)
+         for(int i = 0; i < MAX_CBS; i++)
          {
-            usart_cbdb.fptr[i](rx_buf.data, &rx_buf.len);
-            ++i;
+            if(usart_cbdb.fptr[i] != NULL)
+            {
+               usart_cbdb.fptr[i](rx_buf.data, &rx_buf.len);
+            }
          }
       }
    }

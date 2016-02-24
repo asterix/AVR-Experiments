@@ -30,7 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 /* Globals */
 volatile uint64_t time_ms, green_led_toggles;
 volatile uint8_t yellow_counter;
-volatile bool run_htransform, run_toggle_red;
+volatile uint16_t run_htransform, run_toggle_red;
 volatile button_t button_a;
 
 
@@ -57,17 +57,17 @@ int main()
    while(1)
    {
       /* Run red LED task */
-      if(run_toggle_red)
+      if(run_toggle_red > 0)
       {
          task_1_toggle_red_led();
          
          /* Exp? */
          exp_task_run(TSK_REDLED);
-         run_toggle_red = false;
+         run_toggle_red--;
       }
 
       /* Run hough transform task */
-      if(run_htransform)
+      if(run_htransform > 0)
       {
          for(int i = 0; i < 20; i++)
          {
@@ -76,7 +76,7 @@ int main()
 
          /* Exp? */
          exp_task_run(TSK_HTRNSF);
-         run_htransform = false;
+         run_htransform--;
       }
    }
    
@@ -215,22 +215,22 @@ ISR(TIMER0_COMPA_vect)
    if(time_ms % shared_data.mod_red_led == 0)
    {
       /* Missed deadline? */
-      if(run_toggle_red)
+      if(run_toggle_red > 0)
       {
          exp_task_missed_deadline(TSK_REDLED);
       }
-      run_toggle_red = true;
+      run_toggle_red++;
    }
 
    /* Hough transform task release? */
    if(time_ms % shared_data.mod_h_trnsf == 0)
    {
       /* Missed deadline? */
-      if(run_htransform)
+      if(run_htransform > 0)
       {
          exp_task_missed_deadline(TSK_HTRNSF);
       }
-      run_htransform = true;
+      run_htransform++;
    }
 }
 
