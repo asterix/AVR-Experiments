@@ -24,7 +24,6 @@ Hardware:  ATMega32U4
 
 
 /* String look up in flash memory */
-
 const char task01[] PROGMEM = "1: Time keeper task:\t";
 const char task02[] PROGMEM = "2: Communication task:\t";
 const char task03[] PROGMEM = "3: Red LED task:\t";

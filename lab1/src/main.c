@@ -51,7 +51,7 @@ int main()
 
    /* Debug print buffers */
    //uint16_t dt;
-   char dbgbuf[10];
+   //char dbgbuf[10];
 
    /* Main loop */
    while(1)
@@ -75,10 +75,10 @@ int main()
          }
          _delay_ms(55);
 
-         sprintf(dbgbuf, "%u", run_htransform);
-         usart_print("htrans: ");
-         usart_print((const char*)dbgbuf);
-         usart_print("  \r\n");
+         //sprintf(dbgbuf, "%u", run_htransform);
+         //usart_print("htrans: ");
+         //usart_print((const char*)dbgbuf);
+         //usart_print("  \r\n");
 
          /* Exp? */
          exp_task_run(TSK_HTRNSF);
@@ -88,6 +88,7 @@ int main()
    
    return 0;
 }
+
 
 /* Default startup config */
 void reset_system_data_default()
@@ -102,6 +103,7 @@ void reset_system_data_default()
    shared_data.mod_h_trnsf = 100;
    timer_1_setup_pfc_pwm(5, 50);
 }
+
 
 /* System vars re-init */
 void reset_system_vars()

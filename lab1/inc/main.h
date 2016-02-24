@@ -52,3 +52,5 @@ void leds_turn_on(void);
 
 void leds_turn_off(void);
 
+void reset_system_data_default(void);
+
