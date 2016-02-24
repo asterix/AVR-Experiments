@@ -51,7 +51,7 @@ int main()
 
    /* Debug print buffers */
    //uint16_t dt;
-   //char dbgbuf[50];
+   char dbgbuf[10];
 
    /* Main loop */
    while(1)
@@ -69,10 +69,16 @@ int main()
       /* Run hough transform task */
       if(run_htransform > 0)
       {
-         for(int i = 0; i < 20; i++)
+         for(int i = 0; i < 5; i++)
          {
-            hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
+            //hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
          }
+         _delay_ms(55);
+
+         //sprintf(dbgbuf, "%u", run_htransform);
+         //usart_print("htrans: ");
+         //usart_print((const char*)dbgbuf);
+         //usart_print("  \r\n");
 
          /* Exp? */
          exp_task_run(TSK_HTRNSF);
@@ -237,7 +243,6 @@ ISR(TIMER0_COMPA_vect)
 ISR(TIMER1_COMPB_vect)
 {
    /* Exp? */
-   exp_task_run(TSK_GRNLED);
    exp_task_run(TSK_GRNCNT);
 
    /* Green LED toggles' keeper */
@@ -264,6 +269,7 @@ ISR(TIMER3_COMPA_vect)
    {
       /* Exp? */
       exp_task_run(TSK_JITTER);
+      sei();
 
       PORTC |= (1 << LED_YELLOW);
       _delay_ms(5);

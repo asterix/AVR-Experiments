@@ -21,8 +21,37 @@ Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
 #include "menu_uart.h"
-#include <stdio.h>
-#include <string.h>
+
+
+/* String look up in flash memory */
+
+const char task01[] PROGMEM = "1: Time keeper task:\t";
+const char task02[] PROGMEM = "2: Communication task:\t";
+const char task03[] PROGMEM = "3: Red LED task:\t";
+const char task04[] PROGMEM = "4: Yellow LED task:\t";
+const char task05[] PROGMEM = "5: Jitter LED task:\t";
+const char task06[] PROGMEM = "6: Green LED task:\t";
+const char task07[] PROGMEM = "7: Green count task:\t";
+const char task08[] PROGMEM = "8: Hough trans task:\t";
+
+const char* const task_names[NUM_TASKS] PROGMEM = {task01, task02, 
+                                                   task03, task04,
+                                                   task05, task06, 
+                                                   task07, task08};
+
+const char menu_options[] PROGMEM = {" \r\n\
+\r\n\
+------------------------------------------------------------\r\n\
+                EXPERIMENTATION MENU \r\n\
+------------------------------------------------------------\r\n\
+p        -> Print collected experiment data\r\n\
+e <num>  -> Setup experiment number <num>(1-8)\r\n\
+r <num>  -> Set the green LED task to <num>(1-4194) ms\r\n\
+z        -> Reset all experimentation data\r\n\
+g        -> Start the experiment just configured\r\n\
+q        -> Quit menu and go back to normal mode\r\n\
+------------------------------------------------------------\r\n"};
+
 
 static bool volatile done = false;
 
@@ -30,7 +59,7 @@ static bool volatile done = false;
 static volatile exp_db_t exp_db;
 
 /* Shared data */
-shared_data_t shared_data;
+volatile shared_data_t shared_data;
 
 /* Reset all experimentation data */
 void exp_db_reset()
@@ -46,36 +75,7 @@ void exp_db_reset()
    {
       exp_db.task[i].missed_deadlines = 0;
       exp_db.task[i].times_run = 0;
-      
-      switch(i)
-      {
-         case TSK_TKEEPER:
-            strcpy((char *)exp_db.task[i].name, "1: Time keeper task:\t");
-            break;
-         case TSK_COMM:
-            strcpy((char *)exp_db.task[i].name, "2: Communication task:\t");
-            break;
-         case TSK_REDLED:
-            strcpy((char*)exp_db.task[i].name, "3: Red LED task:\t");
-            break;
-         case TSK_YELOLED:
-            strcpy((char*)exp_db.task[i].name, "4: Yellow LED task:\t");
-            break;
-         case TSK_JITTER:
-            strcpy((char*)exp_db.task[i].name, "5: Jitter LED task:\t");
-            break;
-         case TSK_GRNLED:
-            strcpy((char*)exp_db.task[i].name, "6: Green LED task:\t");
-            break;
-         case TSK_GRNCNT:
-            strcpy((char*)exp_db.task[i].name, "7: Green count task:\t");
-            break;
-         case TSK_HTRNSF:
-            strcpy((char*)exp_db.task[i].name, "8: Hough trans task:\t");
-            break;
-         default:
-            throw_error(ERR_RUNTIME);
-      }
+      exp_db.task[i].task = i;
    }
 }
 
@@ -83,7 +83,11 @@ void exp_db_reset()
 /* Dump collected data */
 void exp_db_print()
 {
-   char numbuf[20];
+   char numbuf[20], name[25];
+   /* Compute details */
+   exp_update_exp_db();
+
+   /* Print */
    usart_print("Experiment number: ");
    sprintf(numbuf, "%u", exp_db.exp);
    usart_print(numbuf);
@@ -95,14 +99,15 @@ void exp_db_print()
 
    for(int i = 0; i < NUM_TASKS; i++)
    {
-      usart_print((char*)exp_db.task[i].name);
+      strcpy_P(name, (char*)pgm_read_word(&task_names[i]));
+      usart_print(name);
 
       usart_print("times run: ");
-      sprintf(numbuf, "%u", exp_db.task[i].times_run);
+      sprintf(numbuf, "%7u", exp_db.task[i].times_run);
       usart_print(numbuf);
-      usart_print("\t");
+      usart_print("  ");
 
-      usart_print("|   missed deadlines: ");
+      usart_print("|  missed deadlines: ");
       sprintf(numbuf, "%u", exp_db.task[i].missed_deadlines);
       usart_print(numbuf);
       usart_print("  \r\n");
@@ -131,6 +136,22 @@ void exp_task_missed_deadline(task_name_t tsk)
 {
    if(exp_db.running)
       exp_db.task[tsk].missed_deadlines++;
+}
+
+
+/* Compute non-computed details */
+void exp_update_exp_db()
+{
+   /* Green LED counting task */
+   uint16_t dt = exp_db.time_to_run - exp_db.time_to_finish;
+   int missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
+
+   if(missed > 0)
+      exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
+
+   /* Green LED task */
+   /* Done in PWM module, so can't count */
+   exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
 }
 
 
@@ -163,7 +184,15 @@ void menu_uart_prompt()
    /* Register callback handler */
    uint8_t cb_id = usart_register_cb(handle_user_inputs);
 
-   usart_print(MENU_OPTIONS);
+   /* Read & print menu prompt from flash */
+   int msg_len = strlen_P(menu_options);
+   char out[2]; out[1] = '\0';
+   
+   for(int i = 0; i < msg_len; i++)
+   {
+      out[0] = pgm_read_byte_near(menu_options + i);
+      usart_print(out);
+   }
 
    while(!done)
    {
@@ -308,11 +337,12 @@ void exp_configure_system(uint8_t exp)
          exp_db.exp = 1;
          exp_db.time_to_run = 60000;
 
-         /* Configure all LEDs to 4Hz blinking */
-         shared_data.mod_red_led = 250;
-         shared_data.mod_yelo_led = 10;
+         /* Configure all LEDs to 2Hz toggle */
+         shared_data.mod_red_led = 500;
+         shared_data.mod_yelo_led = 20;
          shared_data.mod_h_trnsf = 100;
-         timer_1_setup_pfc_pwm(2, 50);
+         shared_data.per_grn_led = 500;
+         timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
          break;
       }
       case 2:

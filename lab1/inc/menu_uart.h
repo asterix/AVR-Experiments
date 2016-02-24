@@ -23,23 +23,14 @@ Hardware:  ATMega32U4
 #ifndef _MENU_UART_H_
 #define _MENU_UART_H_
 
+#include <stdio.h>
+#include <string.h>
+#include <avr/pgmspace.h>
 #include "usart.h"
+
 
 #define NUM_TASKS 8
 #define NUM_EXPS  8
-
-#define MENU_OPTIONS " \r\n\
-\r\n\
-------------------------------------------------------------\r\n\
-                EXPERIMENTATION MENU \r\n\
-------------------------------------------------------------\r\n\
-p        -> Print collected experiment data\r\n\
-e <num>  -> Setup experiment number <num>(1-8)\r\n\
-r <num>  -> Set the green LED task to <num>(1-4194) ms\r\n\
-z        -> Reset all experimentation data\r\n\
-g        -> Start the experiment just configured\r\n\
-q        -> Quit menu and go back to normal mode\r\n\
-------------------------------------------------------------\r\n"
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
@@ -59,7 +50,7 @@ typedef enum
 
 typedef struct
 {
-   char name[25];
+   uint8_t task;
    uint16_t missed_deadlines;
    uint16_t times_run;
 } task_t;
@@ -69,6 +60,7 @@ typedef struct
    uint16_t mod_red_led;
    uint16_t mod_h_trnsf;
    uint16_t mod_yelo_led;
+   uint16_t per_grn_led;
 }shared_data_t;
 
 typedef struct
@@ -92,6 +84,8 @@ void exp_db_print(void);
 void exp_configure_system(uint8_t exp);
 
 void exp_start(void);
+
+void exp_update_exp_db(void);
 
 void exp_time_tick_ms();
 
