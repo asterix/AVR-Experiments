@@ -61,6 +61,9 @@ typedef struct
    uint16_t mod_h_trnsf;
    uint16_t mod_yelo_led;
    uint16_t per_grn_led;
+   uint32_t lag_grn_tsk;
+   uint32_t lag_yel_tsk;
+   bool sei_yel_needed;
 }shared_data_t;
 
 typedef struct

@@ -327,13 +327,15 @@ void exp_configure_system(uint8_t exp)
 {
    /* Reset all data */
    exp_db_reset();
+   
+   exp_db.exp = exp;
+   exp_db.time_to_run = 15000;
 
    switch(exp)
    {
       case 1:
       {
          /* Exp 1 for 60sec */
-         exp_db.exp = 1;
          exp_db.time_to_run = 60000;
 
          /* Configure all LEDs to 2Hz toggle */
@@ -346,30 +348,45 @@ void exp_configure_system(uint8_t exp)
       }
       case 2:
       {
+         /* 20ms delay in green LED task */
+         shared_data.lag_grn_tsk = 29091;
          break;
       }
       case 3:
       {
+         /* 20ms delay in yellow LED task */
+         shared_data.lag_yel_tsk = 29091;
          break;
       }
       case 4:
       {
+         /* 30ms delay in green LED task */
+         shared_data.lag_grn_tsk = 43636;
          break;
       }
       case 5:
       {
+         /* 30ms delay in yellow LED task */
+         shared_data.lag_yel_tsk = 43636;
          break;
       }
       case 6:
       {
+         /* 105ms delay in green LED task */
+         shared_data.lag_grn_tsk = 152727;
          break;
       }
       case 7:
       {
+         /* 105ms delay in yellow LED task */
+         shared_data.lag_yel_tsk = 152727;
          break;
       }
       case 8:
       {
+         /* 105ms delay in yellow LED task + sei() */
+         shared_data.lag_yel_tsk = 152727;
+         shared_data.sei_yel_needed = true;
          break;
       }
       default:

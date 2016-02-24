@@ -101,7 +101,14 @@ void reset_system_data_default()
    shared_data.mod_red_led = 100;
    shared_data.mod_yelo_led = 4;
    shared_data.mod_h_trnsf = 100;
-   timer_1_setup_pfc_pwm(5, 50);
+   shared_data.per_grn_led = 100;
+   
+   shared_data.lag_grn_tsk = 0;
+   shared_data.lag_yel_tsk = 0;
+   
+   shared_data.sei_yel_needed = false;
+   
+   timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
 }
 
 
@@ -257,6 +264,9 @@ ISR(TIMER1_COMPB_vect)
 
    /* Green LED toggles' keeper */
    green_led_toggles++;
+
+   /* Busy-wait delay */
+   _busy_wait_ms(shared_data.lag_grn_tsk);
 }
 
 
@@ -269,9 +279,17 @@ ISR(TIMER3_COMPA_vect)
    /* Yellow LED task */
    if(yellow_counter % shared_data.mod_yelo_led == 0)
    {
+      if(shared_data.sei_yel_needed)
+      {
+         sei();
+      }
+      
       /* Exp? */
       exp_task_run(TSK_YELOLED);
       PORTD ^= (1 << EXT_YELLOW);
+
+      /* Busy-wait delay */
+      _busy_wait_ms(shared_data.lag_yel_tsk);
    }
 
    /* Jitter LED task */
