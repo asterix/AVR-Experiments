@@ -28,11 +28,11 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 
 /* Globals */
-volatile uint64_t time_ms, green_led_toggles;
+volatile uint64_t time_ms, green_led_toggles, nxt_toggle_red;
 volatile uint8_t yellow_counter;
-volatile uint16_t run_htransform, run_toggle_red;
+volatile uint16_t run_htransform;
 volatile button_t button_a;
-
+volatile char res;
 
 /* Main */
 int main()
@@ -52,37 +52,43 @@ int main()
    /* Debug print buffers */
    //uint16_t dt;
    //char dbgbuf[10];
+   uint64_t curr_time;
 
    /* Main loop */
    while(1)
    {
-      /* Run red LED task */
-      if(run_toggle_red > 0)
+      /* Red LED task release? */
+      curr_time = time_ms;
+
+      if(curr_time - nxt_toggle_red >= shared_data.mod_red_led)
       {
          task_1_toggle_red_led();
          
          /* Exp? */
          exp_task_run(TSK_REDLED);
-         run_toggle_red--;
+         nxt_toggle_red = curr_time;
       }
-
-      /* Run hough transform task */
-      if(run_htransform > 0)
+      else if(run_htransform > 0)
       {
-         for(int i = 0; i < 5; i++)
-         {
-            //hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
-         }
-         _delay_ms(55);
-
-         //sprintf(dbgbuf, "%u", run_htransform);
-         //usart_print("htrans: ");
+         /* Run hough transform task */
+         //dt = time_ms;
+         res = hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
+         //dt = time_ms - dt;
+         //sprintf(dbgbuf, "%u", dt);
+         //usart_print("htrans took: ");
          //usart_print((const char*)dbgbuf);
          //usart_print("  \r\n");
-
+         
          /* Exp? */
          exp_task_run(TSK_HTRNSF);
          run_htransform--;
+      }
+
+      /* Dummy increment, roll-over detection */
+      if((int)(nxt_toggle_red - time_ms) > 0)
+      {
+         nxt_toggle_red = 0;
+         res++;
       }
    }
    
@@ -118,7 +124,7 @@ void reset_system_vars()
    reset_system_data_default();
    
    run_htransform = 0;
-   run_toggle_red = 0;
+   nxt_toggle_red = 0;
    
    /* Setup Button A */
    button_a.name = 'A';
@@ -232,17 +238,6 @@ ISR(TIMER0_COMPA_vect)
    exp_time_tick_ms();
    exp_task_run(TSK_TKEEPER);
 
-   /* Red LED task release? */
-   if(time_ms % shared_data.mod_red_led == 0)
-   {
-      /* Missed deadline? */
-      if(run_toggle_red > 0)
-      {
-         exp_task_missed_deadline(TSK_REDLED);
-      }
-      run_toggle_red++;
-   }
-
    /* Hough transform task release? */
    if(time_ms % shared_data.mod_h_trnsf == 0)
    {
@@ -341,6 +336,7 @@ ISR(PCINT0_vect)
 
       /* Halt system */
       timer_0_interrupt_disable();
+      timer_1_interrupt_disable('B');
       timer_3_interrupt_disable();
       pcintx_disable_interrupt(PCINT3);
 
@@ -353,6 +349,7 @@ ISR(PCINT0_vect)
 
       /* Resume system */
       timer_0_interrupt_enable();
+      timer_1_interrupt_enable('B');
       timer_3_interrupt_enable();
       pcintx_enable_interrupt(PCINT3);
    }

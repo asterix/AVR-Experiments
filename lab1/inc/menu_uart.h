@@ -64,7 +64,7 @@ typedef struct
    uint32_t lag_grn_tsk;
    uint32_t lag_yel_tsk;
    bool sei_yel_needed;
-}shared_data_t;
+} shared_data_t;
 
 typedef struct
 { 

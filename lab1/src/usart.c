@@ -183,7 +183,7 @@ bool usart_manage_trx(usart_stat_t st, usart_op_t op)
 /* Polled usart tx */
 void usart_print(const char* txt)
 {
-   char ucsr1b = UCSR1B;
+   volatile char ucsr1b = UCSR1B;
    usart_1_disable_interrupts();
 
    while(*txt != '\0')

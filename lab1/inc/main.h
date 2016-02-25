@@ -30,6 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include "usart.h"
 #include "menu_uart.h"
 #include "hough_gray.h"
+#include "image.h"
 
 
 #define EXT_RED    PORTB4

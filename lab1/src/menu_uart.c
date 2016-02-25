@@ -141,10 +141,15 @@ void exp_task_missed_deadline(task_name_t tsk)
 /* Compute non-computed details */
 void exp_update_exp_db()
 {
-   /* Green LED counting task */
    uint16_t dt = exp_db.time_to_run - exp_db.time_to_finish;
-   int missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
 
+   /* Red LED task */
+   int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
+   if(missed > 0)
+      exp_db.task[TSK_REDLED].missed_deadlines = missed;
+
+   /* Green LED counting task */
+   missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
    if(missed > 0)
       exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
 

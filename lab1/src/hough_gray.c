@@ -22,6 +22,7 @@ Hardware:  ATMega32U4
 
 #include <math.h>
 #include "hough_gray.h"
+#include "image.h"
 
 double PI;
 
@@ -32,7 +33,7 @@ double PI;
 const uint8_t rhoSize = (uint8_t) (__Height / RRATIO );
 const uint8_t thetaSize = (uint8_t) (__Width / TRATIO );
 
-void hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
+char hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
 {
 	int i, j, k;
 	int m, l ;
@@ -41,8 +42,9 @@ void hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
 	double max_val, min_val, valRange;
 	double rho, theta, v ;
 
-	double transformImage[rhoSize][thetaSize];
-	double intensityImage[__Height][__Width];
+        volatile char transformImage[rhoSize][thetaSize];
+	volatile char intensityImage[__Height][__Width];
+	char dummyVar;
 
 	uint16_t pixPtr;
 	uint8_t rValue, gValue, bValue;
@@ -56,7 +58,7 @@ void hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
 			gValue = pgm_read_byte_near(pixPtr);
 			pixPtr =	bPtr + (i*j + j);
 			bValue = pgm_read_byte_near(pixPtr);
-			intensityImage[i][j] = (rValue * 0.2126 + bValue * 0.7152 + gValue * 0.0722) / 255;
+			intensityImage[i][j] = (char)( (rValue * 0.2126 + bValue * 0.7152 + gValue * 0.0722) / 255 );
 		}
 	}
 
@@ -113,7 +115,7 @@ void hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
 					l = (int) ( k + thetaSize/2.0 );
 					l %= thetaSize ;
 				}
-				transformImage[m][l] += (double) (v * rr);
+				transformImage[m][l] += (char) (v * rr);
 			}
 		}
 		/* show which row we are precessing lest user gets bored */
@@ -133,12 +135,15 @@ void hough_transform( uint16_t rPtr, uint16_t gPtr, uint16_t bPtr )
 	/* gamma correction. if gamma > 1, output contrast is better, noise
 	is suppressed, but spots for thin lines may be lost; if gamma < 1,
 	everything is brighter, both lines and noises */
+	dummyVar = 0;
 	valRange = max_val - min_val;
 	for (i = 0; i < rhoSize; i++) {
 		for (j = 0; j < thetaSize; j++) {
 			transformImage[i][j] = pow((transformImage[i][j] - min_val) / valRange, GAMMA );
+			dummyVar += transformImage[i][j];
 		}
 	}
 	// Transform is complete. Nothing to do with it, so we will return and lose all our work.
+	return dummyVar;
 }
 
