@@ -146,7 +146,7 @@ void reset_system_data_default()
 
    /* Default config/shared data */
    shared_data.mod_red_led = 100;
-   shared_data.mod_yelo_led = 4;
+   shared_data.mod_yelo_led = 100;
    shared_data.mod_h_trnsf = 100;
    shared_data.per_grn_led = 100;
 
@@ -204,7 +204,7 @@ void initialize_local()
    /* Timer 3 - 25ms auto-reload */
    if(result)
    {
-      result = timer_3_setup_autoreload(25);
+      result = timer_3_setup_autoreload(TIME_40HZ);
    }
 
    /* Timer 3 interrupt - Compare A */
@@ -278,7 +278,7 @@ ISR(TIMER3_COMPA_vect)
    yellow_counter++;
    
    /* Yellow LED task */
-   if(yellow_counter % shared_data.mod_yelo_led == 0)
+   if(yellow_counter % (shared_data.mod_yelo_led/TIME_40HZ) == 0)
    {
       if(shared_data.sei_yel_needed)
       {
@@ -298,7 +298,6 @@ ISR(TIMER3_COMPA_vect)
    {
       /* Exp? */
       exp_task_run(TSK_JITTER);
-      sei();
 
       PORTC |= (1 << LED_YELLOW);
       _delay_ms(5);
@@ -314,17 +313,11 @@ ISR(TIMER4_COMPD_vect)
    time_ms++;
 
    /* Exp? */
-   exp_time_tick_ms();
    exp_task_run(TSK_TKEEPER);
 
    /* Hough transform task release? */
    if(time_ms % shared_data.mod_h_trnsf == 0)
    {
-      /* Missed deadline? */
-      if(run_htransform > 0)
-      {
-         exp_task_missed_deadline(TSK_HTRNSF);
-      }
       run_htransform++;
    }
 }

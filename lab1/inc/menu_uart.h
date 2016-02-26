@@ -72,7 +72,7 @@ typedef struct
    uint8_t exp;
    bool running;
    uint16_t time_to_run;
-   uint16_t time_to_finish;
+   uint16_t time_run;
    task_t task[NUM_TASKS];
 } exp_db_t;
 

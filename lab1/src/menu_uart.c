@@ -15,7 +15,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  UART based text menu user interface
+Function:  UART based text menu user interface for scheduling experimentation
 Created:   19-Feb-2016
 Hardware:  ATMega32U4 
 ---------------------------------------------------------------------------*/
@@ -66,7 +66,7 @@ void exp_db_reset()
    exp_db.exp = 0;
    exp_db.running = false;
    exp_db.time_to_run = 0;
-   exp_db.time_to_finish = 0;
+   exp_db.time_run = 0;
 
    reset_system_data_default();
    
@@ -92,7 +92,7 @@ void exp_db_print()
    usart_print(numbuf);
    
    usart_print(", Experimentation time (ms): ");
-   sprintf(numbuf, "%u", (exp_db.time_to_run - exp_db.time_to_finish));
+   sprintf(numbuf, "%u", (exp_db.time_run));
    usart_print(numbuf);
    usart_print("  \r\n  \r\n");
 
@@ -118,9 +118,9 @@ void exp_db_print()
 void exp_start()
 {
    exp_db.running = true;
-   exp_db.time_to_finish = exp_db.time_to_run;
+   exp_db.time_run = 0;
 
-   /* Restart CLK */
+   /* Restart timing ref CLK */
    timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
    shared_data.t0_overflows = TCNT0 = 0;
 }
@@ -143,18 +143,15 @@ void exp_task_missed_deadline(task_name_t tsk)
 
 
 /* Manage experimentation timing */
-void exp_time_tick_ms()
+void exp_time_tick(uint16_t dt)
 {
    if(exp_db.running)
    {
-      if(exp_db.time_to_finish > 0)
-      {
-         exp_db.time_to_finish--;
-      }
-      else
+      if(dt > exp_db.time_to_run)
       {
          exp_db.running = false;
       }
+      exp_db.time_run = dt;
    }
 }
 
@@ -162,49 +159,52 @@ void exp_time_tick_ms()
 /* Compute non-computed details */
 void exp_update_exp_db()
 {
-   /* Get time from reliable reference - T0 */
-   uint16_t dt = TIMER_8BIT * shared_data.t0_overflows + TCNT0;
-   dt *= (2*shared_data.per_grn_led);
-
-   exp_db.time_to_finish = exp_db.time_to_run - dt;
-
-   /* Red LED task */
-   int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
-   if(missed > 0)
+   if(exp_db.running)
    {
-      exp_db.task[TSK_REDLED].missed_deadlines = missed;
+      /* Get time from reliable reference - T0 */
+      uint16_t dt = TIMER_8BIT * shared_data.t0_overflows + TCNT0;
+      dt *= (2*shared_data.per_grn_led);
+         
+      exp_time_tick(dt);
+      
+      /* Red LED task */
+      int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
+      if(missed > 0)
+      {
+         exp_db.task[TSK_REDLED].missed_deadlines = missed;
+      }
+   
+      /* Timekeeper task */
+      missed = dt - exp_db.task[TSK_TKEEPER].times_run;
+      if(missed > 0)
+      {
+         exp_db.task[TSK_TKEEPER].missed_deadlines = missed;
+      }
+   
+      /* Green LED counting task */
+      missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
+      if(missed > 0)
+      {
+         exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
+      }
+   
+      /* Hough transform task */
+      missed = dt/shared_data.mod_h_trnsf - exp_db.task[TSK_HTRNSF].times_run;
+      if(missed > 0)
+      {
+         exp_db.task[TSK_HTRNSF].missed_deadlines = missed;
+      }
+   
+      /* Yellow LED task */
+      missed = dt/shared_data.mod_yelo_led - exp_db.task[TSK_YELOLED].times_run;
+      if(missed > 0)
+      {
+         exp_db.task[TSK_YELOLED].missed_deadlines = missed;
+      }
+   
+      /* Green LED task */
+      exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
    }
-
-   /* Timekeeper task */
-   missed = dt - exp_db.task[TSK_TKEEPER].times_run;
-   if(missed > 0)
-   {
-      exp_db.task[TSK_TKEEPER].missed_deadlines = missed;
-   }
-
-   /* Green LED counting task */
-   missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
-   if(missed > 0)
-   {
-      exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
-   }
-
-   /* Hough transform task */
-   missed = dt/shared_data.mod_h_trnsf - exp_db.task[TSK_HTRNSF].times_run;
-   if(missed > 0)
-   {
-      exp_db.task[TSK_HTRNSF].missed_deadlines = missed;
-   }
-
-   /* Yellow LED task */
-   missed = dt/shared_data.mod_yelo_led - exp_db.task[TSK_YELOLED].times_run;
-   if(missed > 0)
-   {
-      exp_db.task[TSK_YELOLED].missed_deadlines = missed;
-   }
-
-   /* Green LED task */
-   exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
 }
 
 
@@ -378,7 +378,7 @@ void exp_configure_system(uint8_t exp)
 
          /* Configure all LEDs to 2Hz toggle */
          shared_data.mod_red_led = 500;
-         shared_data.mod_yelo_led = 20;
+         shared_data.mod_yelo_led = 500;
          shared_data.mod_h_trnsf = 100;
          shared_data.per_grn_led = 500;
          timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
@@ -431,3 +431,4 @@ void exp_configure_system(uint8_t exp)
          throw_error(ERR_RUNTIME);
    }
 }
+

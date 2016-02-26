@@ -36,6 +36,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #define EXT_RED    PORTB4
 #define EXT_YELLOW PORTD6
 #define EXT_GREEN  PORTB6
+#define TIME_40HZ  25
 
 
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
