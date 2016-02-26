@@ -37,6 +37,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #define EXT_YELLOW PORTD6
 #define EXT_GREEN  PORTB6
 
+
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
                            { __asm__ __volatile("nop":::);}
 
@@ -50,11 +51,11 @@ void initialize_local(void);
 
 void startup_appl(void);
 
-void reset_system_var(void);
-
 void leds_turn_on(void);
 
 void leds_turn_off(void);
+
+void reset_system_vars(void);
 
 void reset_system_data_default(void);
 

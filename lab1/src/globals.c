@@ -194,16 +194,76 @@ bool timer_0_setup_autoreload(uint16_t delay)
    return true;
 }
 
-void timer_0_interrupt_enable()
+
+/* Stop timer 0 */
+void timer_0_stop()
 {
-   TIMSK0 |= (1 << OCIE0A);
+   TCCR0B &= ~((1 << CS01)|(1 << CS02)|(1 << CS00));
 }
 
-void timer_0_interrupt_disable()
+
+bool timer_0_setup_ext_counter(uint8_t tstart)
 {
-   TIMSK0 &= ~(1 << OCIE0A);
+   /* Stop timer */
+   timer_0_stop();
+   
+   /* Set timer count start */
+   TCNT0 = tstart;
+
+   /* Disconnect timer output from ports */
+   TCCR0A &= ~((1 << COM0A0)|(1 << COM0A1));
+
+   /* Normal mode */
+   TCCR0B &= ~(1 << WGM02);
+   TCCR0A &= ~((1 << WGM01)|(1 << WGM00));
+
+   /* Interrupts for Timer 0 overflow */
+   TIMSK0 |= (1 << TOIE0);
+
+   /* Configure T0 pin to input */
+   DDRD &= ~(1 << PORTD7);
+
+   /* External CLK */
+   TCCR0B |= ((1 << CS01)|(1 << CS02)|(1 << CS00));
+
+   return true;
 }
 
+void timer_0_interrupt_enable(char module)
+{
+   switch(module)
+   {
+      case 'A':
+         TIMSK0 |= (1 << OCIE0A);
+         break;
+      case 'B':
+         TIMSK0 |= (1 << OCIE0B);
+         break;
+      case 'O':
+         TIMSK0 |= (1 << TOIE0);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
+}
+
+void timer_0_interrupt_disable(char module)
+{
+   switch(module)
+   {
+      case 'A':
+         TIMSK0 &= ~(1 << OCIE0A);
+         break;
+      case 'B':
+         TIMSK0 &= ~(1 << OCIE0B);
+         break;
+      case 'O':
+         TIMSK0 &= ~(1 << TOIE0);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
+}
 
 
 /* Timer 1 setup */
@@ -263,6 +323,7 @@ bool timer_1_setup_autoreload(uint16_t delay)
    return true;
 }
 
+/* Timer 1 - PWM Phase and Frequency correct */
 bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
 {
    bool result = true;
@@ -353,6 +414,9 @@ void timer_1_interrupt_enable(char module)
       case 'C':
          TIMSK1 |= (1 << OCIE1C);
          break;
+      case 'O':
+         TIMSK1 |= (1 << TOIE1);
+         break;
       default:
          throw_error(ERR_CONFIG);
    }
@@ -370,6 +434,9 @@ void timer_1_interrupt_disable(char module)
          break;
       case 'C':
          TIMSK1 &= ~(1 << OCIE1C);
+         break;
+      case 'O':
+         TIMSK1 &= ~(1 << TOIE1);
          break;
       default:
          throw_error(ERR_CONFIG);
@@ -434,14 +501,92 @@ bool timer_3_setup_autoreload(uint16_t delay)
    return true;
 }
 
-void timer_3_interrupt_enable()
+void timer_3_interrupt_enable(char module)
 {
-   TIMSK3 |= (1 << OCIE3A);
+   switch(module)
+   {
+      case 'A':
+         TIMSK3 |= (1 << OCIE3A);
+         break;
+      case 'B':
+         TIMSK3 |= (1 << OCIE3B);
+         break;
+      case 'C':
+         TIMSK3 |= (1 << OCIE3C);
+         break;
+      case 'O':
+         TIMSK3 |= (1 << TOIE3);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
 }
 
-void timer_3_interrupt_disable()
+void timer_3_interrupt_disable(char module)
 {
-   TIMSK3 &= ~(1 << OCIE3A);
+   switch(module)
+   {
+      case 'A':
+         TIMSK3 &= ~(1 << OCIE3A);
+         break;
+      case 'B':
+         TIMSK3 &= ~(1 << OCIE3B);
+         break;
+      case 'C':
+         TIMSK3 &= ~(1 << OCIE3C);
+         break;
+      case 'O':
+         TIMSK3 &= ~(1 << TOIE3);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
+}
+
+
+/* Timer 4 normal mode */
+bool timer_4_setup_normal(uint16_t delay)
+{
+   double freq = (double)1000/(2*delay);
+   double xd = (double)64000000/freq;
+   volatile uint16_t top = 0;
+
+   /* Set up PLL, High Speed timer clk = 64MHz */
+   pll_configure_tclk_source_freq();
+
+   /* Normal mode */
+   TCCR4A &= ~((1 << COM4B1)|(1 << COM4B0));
+   TCCR4A &= ~((1 << COM4A1)|(1 << COM4A0));
+   TCCR4A &= ~((1 << PWM4A)|(1 << PWM4B));
+   TCCR4C &= ~(1 << PWM4D);
+
+   /* !Generate output compare match on OC4D */
+   TCCR4C &= ~((1 << COM4D1)|(1 << COM4D0));
+
+   /* These don't matter */
+   TCCR4D &= ~((1 << WGM41)|(1 << WGM40));
+
+   /* Try to set pre-scaler */ 
+   top = timer_4_try_set_clk_divider(xd);
+
+   /* High 2-bits of 10-bit number */
+   TC4H = (uint8_t)(top >> 8);
+   /* Low 8-bits of 10-bit number */
+   OCR4C = (uint8_t)(top & 0xFF);
+
+   /* High 2-bits of 10-bit number */
+   TC4H = (uint8_t)(top >> 8);
+   /* Low 8-bits of 10-bit number */
+   OCR4D = (uint8_t)(top & 0xFF);
+
+   /* Set initial count to 0 */
+   TC4H = 0;
+   TCNT4 = 0;
+
+   if(top != 0)
+      return true;
+   else
+      return false;
 }
 
 /* HS Timer 4 */
@@ -464,7 +609,36 @@ void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc)
    TCCR4D &= ~(1 << WGM41);
    TCCR4D |= (1 << WGM40);
 
-   /* Set HS-tclk divider */
+   /* Try to set pre-scaler */ 
+   top = timer_4_try_set_clk_divider(xd);
+
+   /* High 2-bits of 10-bit number */
+   TC4H = (uint8_t)(top >> 8);
+   /* Low 8-bits of 10-bit number */
+   OCR4C = (uint8_t)(top & 0xFF);
+
+   /* Duty cycle */
+   if(dutycyc >= 0 && dutycyc <= 100)
+   {
+      dcyc = top * (double)dutycyc/100;
+      TC4H = (uint8_t)(dcyc >> 8);
+      OCR4B = (uint8_t)(dcyc & 0xFF);
+   }
+   else
+   {
+      TCCR4B &= ~((1 << CS43)|(1 << CS42));
+      TCCR4B &= ~((1 << CS41)|(1 << CS40));
+      throw_error(ERR_CONFIG);
+   }
+}
+
+
+/* Set HS-tclk divider */
+uint16_t timer_4_try_set_clk_divider(double xd)
+{
+   uint16_t top = 0;
+
+   /* Tranche'd setting */
    if(xd/1 < TIMER_10BIT)
    {
       TCCR4B &= ~((1 << CS43)|(1 << CS42)|(1 << CS41));
@@ -561,25 +735,52 @@ void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc)
       throw_error(ERR_CONFIG);
    }
 
-   /* High 2-bits of 10-bit number */
-   TC4H = (uint8_t)(top >> 8);
-   /* Low 8-bits of 10-bit number */
-   OCR4C = (uint8_t)(top & 0xFF);
+   return top;
+}
 
-   /* Duty cycle */
-   if(dutycyc >= 0 && dutycyc <= 100)
+
+void timer_4_interrupt_enable(char module)
+{
+   switch(module)
    {
-      dcyc = top * (double)dutycyc/100;
-      TC4H = (uint8_t)(dcyc >> 8);
-      OCR4B = (uint8_t)(dcyc & 0xFF);
-   }
-   else
-   {
-      TCCR4B &= ~((1 << CS43)|(1 << CS42));
-      TCCR4B &= ~((1 << CS41)|(1 << CS40));
-      throw_error(ERR_CONFIG);
+      case 'A':
+         TIMSK4 |= (1 << OCIE4A);
+         break;
+      case 'B':
+         TIMSK4 |= (1 << OCIE4B);
+         break;
+      case 'D':
+         TIMSK4 |= (1 << OCIE4D);
+         break;
+      case 'O':
+         TIMSK4 |= (1 << TOIE4);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
    }
 }
+
+void timer_4_interrupt_disable(char module)
+{
+   switch(module)
+   {
+      case 'A':
+         TIMSK4 &= ~(1 << OCIE4A);
+         break;
+      case 'B':
+         TIMSK4 &= ~(1 << OCIE4B);
+         break;
+      case 'D':
+         TIMSK4 &= ~(1 << OCIE4D);
+         break;
+      case 'O':
+         TIMSK4 &= ~(1 << TOIE4);
+         break;
+      default:
+         throw_error(ERR_CONFIG);
+   }
+}
+
 
 
 /* Setup the PCINTx interrupts */

@@ -117,9 +117,13 @@ timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type
 /* Timer 0 */
 bool timer_0_setup_autoreload(uint16_t delay);
 
-void timer_0_interrupt_enable();
+bool timer_0_setup_ext_counter(uint8_t tstart);
 
-void timer_0_interrupt_disable();
+void timer_0_interrupt_enable(char module);
+
+void timer_0_interrupt_disable(char module);
+
+void timer_0_stop(void);
 
 /* Timer 1 */
 bool timer_1_setup_autoreload(uint16_t delay);
@@ -134,13 +138,21 @@ void timer_1_interrupt_disable(char module);
 /* Timer 3 */
 bool timer_3_setup_autoreload(uint16_t delay);
 
-void timer_3_interrupt_enable();
+void timer_3_interrupt_enable(char module);
 
-void timer_3_interrupt_disable();
+void timer_3_interrupt_disable(char module);
 
 
 /* Timer 4 */
+bool timer_4_setup_normal(uint16_t delay);
+
+uint16_t timer_4_try_set_clk_divider(double xd);
+
 void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc);
+
+void timer_4_interrupt_enable(char module);
+
+void timer_4_interrupt_disable(char module);
 
 
 /* Pin Changes */

@@ -28,11 +28,12 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 
 /* Globals */
-volatile uint64_t time_ms, green_led_toggles, nxt_toggle_red;
+volatile uint64_t time_ms, nxt_toggle_red;
 volatile uint8_t yellow_counter;
-volatile uint16_t run_htransform;
+volatile uint16_t run_htransform, timer0_ovf;
 volatile button_t button_a;
 volatile char res;
+
 
 /* Main */
 int main()
@@ -96,44 +97,6 @@ int main()
 }
 
 
-/* Default startup config */
-void reset_system_data_default()
-{
-   time_ms = 0;
-   yellow_counter = 0;
-   green_led_toggles = 0;
-
-   /* Default config/shared data */
-   shared_data.mod_red_led = 100;
-   shared_data.mod_yelo_led = 4;
-   shared_data.mod_h_trnsf = 100;
-   shared_data.per_grn_led = 100;
-   
-   shared_data.lag_grn_tsk = 0;
-   shared_data.lag_yel_tsk = 0;
-   
-   shared_data.sei_yel_needed = false;
-   
-   timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
-}
-
-
-/* System vars re-init */
-void reset_system_vars()
-{
-   reset_system_data_default();
-   
-   run_htransform = 0;
-   nxt_toggle_red = 0;
-   
-   /* Setup Button A */
-   button_a.name = 'A';
-   button_a.port = (uint8_t*)(&PINB);
-   button_a.mask = (1 << BUTTON_A);
-   button_a.stat = HIGH;
-}
-
-
 /* Task - Red LED */
 void task_1_toggle_red_led()
 {
@@ -158,6 +121,44 @@ void startup_appl()
    reset_system_vars();
 }
 
+
+/* System vars re-init */
+void reset_system_vars()
+{
+   reset_system_data_default();
+   
+   run_htransform = 0;
+   nxt_toggle_red = 0;
+   
+   /* Setup Button A */
+   button_a.name = 'A';
+   button_a.port = (uint8_t*)(&PINB);
+   button_a.mask = (1 << BUTTON_A);
+   button_a.stat = HIGH;
+}
+
+
+/* Default startup config */
+void reset_system_data_default()
+{
+   time_ms = TCNT0 = 0;
+   yellow_counter = 0;
+
+   /* Default config/shared data */
+   shared_data.mod_red_led = 100;
+   shared_data.mod_yelo_led = 4;
+   shared_data.mod_h_trnsf = 100;
+   shared_data.per_grn_led = 100;
+
+   shared_data.t0_overflows = 0;
+   
+   shared_data.lag_grn_tsk = 0;
+   shared_data.lag_yel_tsk = 0;
+   shared_data.sei_yel_needed = false;
+   timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
+}
+
+
 /* Configure interrupts */
 void initialize_local()
 {
@@ -176,10 +177,22 @@ void initialize_local()
       result = usart_setup_configure(USART_DOUBLE_ASYNC);
    }
 
-   /* Timer 0 - 1ms auto-reload */
+   /* Timer 0 external ref clk */
    if(result)
    {
-      result = timer_0_setup_autoreload(1);
+      result = timer_0_setup_ext_counter(0);
+   }
+
+   /* Timer 0 overflow interrupt */
+   if(result)
+   {
+      timer_0_interrupt_enable('O');
+   }
+
+   /* Timer 1 - PWM - 100ms = 5Hz @ 50% duty cycle */
+   if(result)
+   {
+      result = timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
    }
 
    /* Timer 1 interrupt - PWM */
@@ -188,16 +201,28 @@ void initialize_local()
       timer_1_interrupt_enable('B');
    }
 
-   /* Timer 1 - PWM - 100ms = 5Hz @ 50% duty cycle */
-   if(result)
-   {
-      result = timer_1_setup_pfc_pwm(5, 50);
-   }
-
    /* Timer 3 - 25ms auto-reload */
    if(result)
    {
       result = timer_3_setup_autoreload(25);
+   }
+
+   /* Timer 3 interrupt - Compare A */
+   if(result)
+   {
+      timer_3_interrupt_enable('A');
+   }
+
+   /* Timer 4 - 1ms */
+   if(result)
+   {
+      result = timer_4_setup_normal(1);
+   }
+
+   /* Timer 4 interrupt - Compare D */
+   if(result)
+   {
+      timer_4_interrupt_enable('D');
    }
 
    if(!result)
@@ -228,26 +253,10 @@ void leds_turn_off()
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
 -----------------------------------------------------------*/
-/* Timer 0 compare A interrupt */
-ISR(TIMER0_COMPA_vect)
+/* Timer 0 overflow interrupt */
+ISR(TIMER0_OVF_vect)
 {
-   /* time_ms keeper */
-   time_ms++;
-
-   /* Exp? */
-   exp_time_tick_ms();
-   exp_task_run(TSK_TKEEPER);
-
-   /* Hough transform task release? */
-   if(time_ms % shared_data.mod_h_trnsf == 0)
-   {
-      /* Missed deadline? */
-      if(run_htransform > 0)
-      {
-         exp_task_missed_deadline(TSK_HTRNSF);
-      }
-      run_htransform++;
-   }
+   timer0_ovf++;
 }
 
 
@@ -256,9 +265,6 @@ ISR(TIMER1_COMPB_vect)
 {
    /* Exp? */
    exp_task_run(TSK_GRNCNT);
-
-   /* Green LED toggles' keeper */
-   green_led_toggles++;
 
    /* Busy-wait delay */
    _busy_wait_ms(shared_data.lag_grn_tsk);
@@ -301,6 +307,29 @@ ISR(TIMER3_COMPA_vect)
 }
 
 
+/* Timer 4 compare D interrupt */
+ISR(TIMER4_COMPD_vect)
+{
+   /* time_ms keeper */
+   time_ms++;
+
+   /* Exp? */
+   exp_time_tick_ms();
+   exp_task_run(TSK_TKEEPER);
+
+   /* Hough transform task release? */
+   if(time_ms % shared_data.mod_h_trnsf == 0)
+   {
+      /* Missed deadline? */
+      if(run_htransform > 0)
+      {
+         exp_task_missed_deadline(TSK_HTRNSF);
+      }
+      run_htransform++;
+   }
+}
+
+
 /* ISR - Pin Change Interrupt */
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
@@ -335,9 +364,11 @@ ISR(PCINT0_vect)
       button_a.stat = HIGH;
 
       /* Halt system */
-      timer_0_interrupt_disable();
+      timer_0_stop();
+      timer_0_interrupt_disable('O');
       timer_1_interrupt_disable('B');
-      timer_3_interrupt_disable();
+      timer_3_interrupt_disable('A');
+      timer_4_interrupt_disable('D');
       pcintx_disable_interrupt(PCINT3);
 
       /* Exp? */
@@ -348,10 +379,13 @@ ISR(PCINT0_vect)
       menu_uart_prompt();
 
       /* Resume system */
-      timer_0_interrupt_enable();
+      timer_0_setup_ext_counter(TCNT0);
+      timer_0_interrupt_enable('O');
       timer_1_interrupt_enable('B');
-      timer_3_interrupt_enable();
+      timer_3_interrupt_enable('A');
+      timer_4_interrupt_enable('D');
       pcintx_enable_interrupt(PCINT3);
+      
    }
 }
 

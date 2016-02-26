@@ -57,6 +57,7 @@ typedef struct
 
 typedef struct
 {
+   uint16_t t0_overflows;
    uint16_t mod_red_led;
    uint16_t mod_h_trnsf;
    uint16_t mod_yelo_led;

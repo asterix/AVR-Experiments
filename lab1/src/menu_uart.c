@@ -119,6 +119,10 @@ void exp_start()
 {
    exp_db.running = true;
    exp_db.time_to_finish = exp_db.time_to_run;
+
+   /* Restart CLK */
+   timer_1_setup_pfc_pwm((double)1000/(2*shared_data.per_grn_led), 50);
+   shared_data.t0_overflows = TCNT0 = 0;
 }
 
 
@@ -138,27 +142,6 @@ void exp_task_missed_deadline(task_name_t tsk)
 }
 
 
-/* Compute non-computed details */
-void exp_update_exp_db()
-{
-   uint16_t dt = exp_db.time_to_run - exp_db.time_to_finish;
-
-   /* Red LED task */
-   int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
-   if(missed > 0)
-      exp_db.task[TSK_REDLED].missed_deadlines = missed;
-
-   /* Green LED counting task */
-   missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
-   if(missed > 0)
-      exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
-
-   /* Green LED task */
-   /* Done in PWM module, so can't count */
-   exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
-}
-
-
 /* Manage experimentation timing */
 void exp_time_tick_ms()
 {
@@ -174,6 +157,56 @@ void exp_time_tick_ms()
       }
    }
 }
+
+
+/* Compute non-computed details */
+void exp_update_exp_db()
+{
+   /* Get time from reliable reference - T0 */
+   uint16_t dt = TIMER_8BIT * shared_data.t0_overflows + TCNT0;
+   dt *= (2*shared_data.per_grn_led);
+
+   exp_db.time_to_finish = exp_db.time_to_run - dt;
+
+   /* Red LED task */
+   int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
+   if(missed > 0)
+   {
+      exp_db.task[TSK_REDLED].missed_deadlines = missed;
+   }
+
+   /* Timekeeper task */
+   missed = dt - exp_db.task[TSK_TKEEPER].times_run;
+   if(missed > 0)
+   {
+      exp_db.task[TSK_TKEEPER].missed_deadlines = missed;
+   }
+
+   /* Green LED counting task */
+   missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
+   if(missed > 0)
+   {
+      exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
+   }
+
+   /* Hough transform task */
+   missed = dt/shared_data.mod_h_trnsf - exp_db.task[TSK_HTRNSF].times_run;
+   if(missed > 0)
+   {
+      exp_db.task[TSK_HTRNSF].missed_deadlines = missed;
+   }
+
+   /* Yellow LED task */
+   missed = dt/shared_data.mod_yelo_led - exp_db.task[TSK_YELOLED].times_run;
+   if(missed > 0)
+   {
+      exp_db.task[TSK_YELOLED].missed_deadlines = missed;
+   }
+
+   /* Green LED task */
+   exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
+}
+
 
 /* Menu mode */
 void menu_uart_prompt()
