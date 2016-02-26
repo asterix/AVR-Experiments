@@ -848,7 +848,7 @@ void throw_error(error_code_t ec)
       }
       case ERR_PERIPH:
       {
-         PORTD |= (1 << LED_GREEN);
+         PORTD &= ~(1 << LED_GREEN);
          break;
       }
       case ERR_RUNTIME:
