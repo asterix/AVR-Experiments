@@ -30,7 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 /* Globals */
 volatile uint64_t time_ms, nxt_toggle_red;
 volatile uint8_t yellow_counter;
-volatile uint16_t run_htransform, timer0_ovf;
+volatile uint16_t run_htransform, run_jitter, timer0_ovf;
 volatile button_t button_a;
 volatile char res;
 
@@ -38,6 +38,8 @@ volatile char res;
 /* Main */
 int main()
 { 
+   uint64_t curr_time;
+
    /* Init generic */
    initialize_basic();
 
@@ -49,11 +51,7 @@ int main()
    
    /* Enable interrupts */
    sei();
-
-   /* Debug print buffers */
-   //uint16_t dt;
-   //char dbgbuf[10];
-   uint64_t curr_time;
+   menu_prompt();
 
    /* Main loop */
    while(1)
@@ -69,20 +67,27 @@ int main()
          exp_task_run(TSK_REDLED);
          nxt_toggle_red = curr_time;
       }
-      else if(run_htransform > 0)
+      else 
       {
+         /* Jitter LED task */
+         if(run_jitter > 0)
+         {
+            task_5_jitter_led();
+            
+            /* Exp? */
+            exp_task_run(TSK_JITTER);
+            run_jitter--;
+         }
+
          /* Run hough transform task */
-         //dt = time_ms;
-         res = hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
-         //dt = time_ms - dt;
-         //sprintf(dbgbuf, "%u", dt);
-         //usart_print("htrans took: ");
-         //usart_print((const char*)dbgbuf);
-         //usart_print("  \r\n");
+         if(run_htransform > 0)
+         {
+            res = hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
          
-         /* Exp? */
-         exp_task_run(TSK_HTRNSF);
-         run_htransform--;
+            /* Exp? */
+            exp_task_run(TSK_HTRNSF);
+            run_htransform--;
+         }
       }
 
       /* Dummy increment, roll-over detection */
@@ -101,6 +106,14 @@ int main()
 void task_1_toggle_red_led()
 {
    PORTB ^= (1 << EXT_RED);
+}
+
+/* Task - Jitter LED */
+void task_5_jitter_led()
+{
+   PORTC |= (1 << LED_YELLOW);
+   _delay_ms(5);
+   PORTC &= ~(1 << LED_YELLOW);
 }
 
 /*-----------------------------------------------------------
@@ -296,12 +309,10 @@ ISR(TIMER3_COMPA_vect)
    /* Jitter LED task */
    if(rand() % 5 == 4)
    {
-      /* Exp? */
-      exp_task_run(TSK_JITTER);
+      if(run_jitter > 0)
+         exp_task_missed_deadline(TSK_JITTER);
 
-      PORTC |= (1 << LED_YELLOW);
-      _delay_ms(5);
-      PORTC &= ~(1 << LED_YELLOW);
+      run_jitter++;
    }
 }
 
@@ -356,29 +367,33 @@ ISR(PCINT0_vect)
       _delay_ms(DEBOUNCE_DELAY);
       button_a.stat = HIGH;
 
-      /* Halt system */
-      timer_0_stop();
-      timer_0_interrupt_disable('O');
-      timer_1_interrupt_disable('B');
-      timer_3_interrupt_disable('A');
-      timer_4_interrupt_disable('D');
-      pcintx_disable_interrupt(PCINT3);
-
-      /* Exp? */
-      exp_task_run(TSK_COMM);
-
-      /* Throw experimentation prompt */
-      sei();
-      menu_uart_prompt();
-
-      /* Resume system */
-      timer_0_setup_ext_counter(TCNT0);
-      timer_0_interrupt_enable('O');
-      timer_1_interrupt_enable('B');
-      timer_3_interrupt_enable('A');
-      timer_4_interrupt_enable('D');
-      pcintx_enable_interrupt(PCINT3);
-      
+      menu_prompt();
    }
 }
 
+
+void menu_prompt()
+{
+   /* Halt system */
+   timer_0_stop();
+   timer_0_interrupt_disable('O');
+   timer_1_interrupt_disable('B');
+   timer_3_interrupt_disable('A');
+   timer_4_interrupt_disable('D');
+   pcintx_disable_interrupt(PCINT3);
+
+   /* Exp? */
+   exp_task_run(TSK_COMM);
+   
+   /* Throw experimentation prompt */
+   sei();
+   menu_uart_prompt();
+   
+   /* Resume system */
+   timer_0_setup_ext_counter(TCNT0);
+   timer_0_interrupt_enable('O');
+   timer_1_interrupt_enable('B');
+   timer_3_interrupt_enable('A');
+   timer_4_interrupt_enable('D');
+   pcintx_enable_interrupt(PCINT3);
+}

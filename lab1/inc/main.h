@@ -44,8 +44,10 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 extern shared_data_t shared_data;
 
-/* Task - Red LED */
+/* Tasks */
 void task_1_toggle_red_led(void);
+
+void task_5_jitter_led();
 
 /* Helpers */
 void initialize_local(void);
@@ -59,4 +61,6 @@ void leds_turn_off(void);
 void reset_system_vars(void);
 
 void reset_system_data_default(void);
+
+void menu_prompt();
 
