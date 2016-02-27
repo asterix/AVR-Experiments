@@ -141,7 +141,10 @@ bool usart_setup_configure(usart_mode_t mode)
       }
    }
 
-   result = usart_manage_trx(U_ENABLE, USART_TRX);
+   if(result)
+   {
+      result = usart_manage_trx(U_ENABLE, USART_TRX);
+   }
 
    return result;
 }
@@ -198,6 +201,7 @@ void usart_print(const char* txt)
 /* Echo back rx on tx */
 void usart_loopback()
 {
+   while(!(UCSR1A & (1 << UDRE1)));
    UDR1 = rx_buf.data[rx_buf.len];
 }
 
