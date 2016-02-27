@@ -193,22 +193,22 @@ Experiment number: 8, Experimentation time (ms): 10200
 
 ### 6 - Timing control, responsiveness of system and impact on other tasks
 (a) Time driven execution inside an ISR:
-    - Timing control depends on the underlying timekeeping mechanism. Good when that is accurate and interrupt has high priority.
-    - Responsiveness is the best as interrupt driven tasks have a short response time (when not blocked)
-    - Impact on other tasks is high if the task takes a long time to run. ISR executed tasks should be kept short.
+- Timing control depends on the underlying timekeeping mechanism. Good when that is accurate and interrupt has high priority.
+- Responsiveness is the best as interrupt driven tasks have a short response time (when not blocked)
+- Impact on other tasks is high if the task takes a long time to run. ISR executed tasks should be kept short.
     
 (b) Time-driven release from within the ISR:
-    - Timing control depends on the underlying timekeeping mechanism. Good when that is accurate and interrupt has high priority.
-    - Responsiveness depends on prioritization in the scheduler which actually runs the released task.
-    - Impact on other tasks can be better controlled as this is now a part of regular scheduled task which is accounted for.
+- Timing control depends on the underlying timekeeping mechanism. Good when that is accurate and interrupt has high priority.
+- Responsiveness depends on prioritization in the scheduler which actually runs the released task.
+- Impact on other tasks can be better controlled as this is now a part of regular scheduled task which is accounted for.
     
 (c) External interrupt based task execution in an ISR:
-    - Timing control is excellent since external interrupts have a very high priority.
-    - Responsiveness is again excellent as this is probably the best a CPU can offer. Again as a result of high priority interrupt treatment.
-    - Impact on other tasks depends on the time taken be the ISR. If the system is halted, then this is irrelevant. But if not then the task has to be kept short.
+- Timing control is excellent since external interrupts have a very high priority.
+- Responsiveness is again excellent as this is probably the best a CPU can offer. Again as a result of high priority interrupt treatment.
+- Impact on other tasks depends on the time taken be the ISR. If the system is halted, then this is irrelevant. But if not then the task has to be kept short.
     
 (d) Periodic polling from within an ISR and release:
-    - Timing control depends on the frequency of the ISR. A balance is needed between polling frequency requirements and CPU interruption.
-    - Responsiveness depends on prioritization in the scheduler which actually runs the released task.
-    - Impact on other tasks is estimated and accounted for by the scheduler which runs the task. The impact can hence be balanced.
+- Timing control depends on the frequency of the ISR. A balance is needed between polling frequency requirements and CPU interruption.
+- Responsiveness depends on prioritization in the scheduler which actually runs the released task.
+- Impact on other tasks is estimated and accounted for by the scheduler which runs the task. The impact can hence be balanced.
     
