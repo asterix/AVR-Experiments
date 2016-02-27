@@ -24,8 +24,9 @@ stop_timer();
 time_taken_ms = 25 * num_timer_overflows + TCNT1/65536 * 25 - num_timer_overflows * (38/CPU_FREQUENCY)
 ```
 Factors affecting WCET analysis are:
-1. If ```hough_transform()``` implementation has a lot of conditional paths then depending on the data set used and the paths traversed, WCET changes. To mitigate such issues, a vast data set traversing all paths should be used for analysis.
-2. WCET analysis is also affected by how often ```hough_transform()``` is interrupted during execution and how long the interrupting process occupies the processor. Hence during WCET analysis, frequent interruptions, long ISRs should be avoided. In my case I only increment a global variable every 25ms when the timer overflows. Depending on how long interrupt processing takes, this offset can be subtracted from the actual measurement. My ISR has the below overhead: (38 CPU cycles)
+* 1. If ```hough_transform()``` implementation has a lot of conditional paths then depending on the data set used and the paths traversed, WCET changes. To mitigate such issues, a vast data set traversing all paths should be used for analysis.
+
+* 2. WCET analysis is also affected by how often ```hough_transform()``` is interrupted during execution and how long the interrupting process occupies the processor. Hence during WCET analysis, frequent interruptions, long ISRs should be avoided. In my case I only increment a global variable every 25ms when the timer overflows. Depending on how long interrupt processing takes, this offset can be subtracted from the actual measurement. My ISR has the below overhead: (38 CPU cycles)
 ```
 ISR(TIMER1_OVF_vect)
 {
@@ -51,7 +52,7 @@ ISR(TIMER1_OVF_vect)
      758:	1f 90       	pop	r1
      75a:	18 95       	reti
 ```
-3. Overall confidence in such a controlled analysis is high, but there is always a code path traverse uncertainty which has to be accounted for. If the analysis done repeatedly on a wide range of images and averaged, then a confidence of +/- 5% should be easily achievable.
+* 3. Overall confidence in such a controlled analysis is high, but there is always a code path traverse uncertainty which has to be accounted for. If the analysis done repeatedly on a wide range of images and averaged, then a confidence of +/- 5% should be easily achievable.
 
 ### 2 - Periods of tasks
 The period of a periodic task on real-time systems is defined as the time between two releases.
