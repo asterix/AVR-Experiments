@@ -1,21 +1,31 @@
-/*-----------------------------------------------------------
-- USART based text menu user interface
-- Baud = 9600
+/*---------------------------------------------------------------------------
+  
+Copyright (c) 2016, Vaibhav Desai
 
-- Author:    desai043
-- Created:   17-Feb-2016
-- Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
-             Controller LV with Raspberry Pi Bridge
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-           Note: LFUSE = 0xFF, HFUSE = 0xD0
-           XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
------------------------------------------------------------*/
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------------------------------------------------------------------------
+Function:  USART/UART communication interface
+Created:   17-Feb-2016
+Hardware:  ATMega32U4 
+---------------------------------------------------------------------------*/
+
 #include "usart.h"
+#include <stdlib.h>
 
 /* USART buffers */
-static volatile ubuffer_t rx_buf;
-static volatile ubuffer_t tx_buf;
-static volatile bool rxd_crlf = false;
+static ubuffer_t rx_buf;
+static ubuffer_t tx_buf;
 
 /* USART rx/tx callbacks */
 static volatile callback_db_t usart_cbdb;
@@ -25,9 +35,19 @@ void usart_reset()
 {
    tx_buf.len = tx_buf.idx = 0;
    rx_buf.len = rx_buf.idx = 0;
-   rxd_crlf = false;
 
    usart_cbdb.num = 0;
+   for(int i = 0; i < MAX_CBS; i++)
+   {
+      usart_cbdb.fptr[i] = NULL;
+   }
+}
+
+/* Reset rx/tx buffers */
+void usart_reset_buffers()
+{
+   tx_buf.len = tx_buf.idx = 0;
+   rx_buf.len = rx_buf.idx = 0;
 }
 
 /* Trigger start tx */
@@ -40,18 +60,29 @@ void usart_start_send()
 /* Callback registration */
 uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
 {
+   int i = 0;
+
    if(usart_cbdb.num >= MAX_CBS)
    {
-      throw_error(ERR_PERIPH);
+      throw_error(ERR_RUNTIME);
    }
 
-   usart_cbdb.fptr[usart_cbdb.num] = cb;
-   return usart_cbdb.num++;
+   for(i = 0; i < MAX_CBS; i++)
+   {
+      if(usart_cbdb.fptr[i] == NULL)
+      {
+         usart_cbdb.fptr[i] = cb;
+         usart_cbdb.num++;
+         break;
+      }
+   }
+   return i;
 }
 
+/* Remove a registered callback */
 void usart_deregister_cb(uint8_t cbnum)
 {
-   // TODO - rearrange cbdb
+   usart_cbdb.fptr[cbnum] = NULL;
    usart_cbdb.num--;
 }
 
@@ -110,25 +141,38 @@ bool usart_setup_configure(usart_mode_t mode)
       }
    }
 
-   result = usart_manage_trx(U_ENABLE);
-   
+   if(result)
+   {
+      result = usart_manage_trx(U_ENABLE, USART_TRX);
+   }
+
    return result;
 }
 
 /* Enable rx/tx */
-bool usart_manage_trx(usart_stat_t st)
+bool usart_manage_trx(usart_stat_t st, usart_op_t op)
 {
    bool result = true;
    switch(st)
    {
       case U_ENABLE:
       {
-         UCSR1B |= ((1 << RXEN1)|(1 << TXEN1));
+         if(op == USART_RX || op == USART_TRX)
+            UCSR1B |= (1 << RXEN1);
+
+         if(op == USART_TX || op == USART_TRX)
+            UCSR1B |= (1 << TXEN1);
+
          break;
       }
       case U_DISABLE:
       {
-         UCSR1B &= ~((1 << RXEN1)|(1 << TXEN1));
+         if(op == USART_RX || op == USART_TRX)
+            UCSR1B &= ~(1 << RXEN1);
+
+         if(op == USART_TX || op == USART_TRX)
+            UCSR1B &= ~(1 << TXEN1);
+         
          break;
       }
       default:
@@ -139,17 +183,41 @@ bool usart_manage_trx(usart_stat_t st)
    return result;
 }
 
+/* Polled usart tx */
+void usart_print(const char* txt)
+{
+   volatile char ucsr1b = UCSR1B;
+   usart_1_disable_interrupts();
+
+   while(*txt != '\0')
+   {
+      while(!(UCSR1A & (1 << UDRE1)));
+      UDR1 = *txt++;
+   }
+
+   UCSR1B = ucsr1b;
+}
+
 /* Echo back rx on tx */
 void usart_loopback()
 {
-   UDR1 = rx_buf.data[rx_buf.len - 1];
+   while(!(UCSR1A & (1 << UDRE1)));
+   UDR1 = rx_buf.data[rx_buf.len];
 }
 
 /* Setup USART1 interrupts */
-void usart_1_enable_interrupts()
+bool usart_1_enable_interrupts()
 {
    UCSR1B |= ((1 << RXCIE1)|(1 << TXCIE1));
+   return true;
 }
+
+bool usart_1_disable_interrupts()
+{
+   UCSR1B &= ~((1 << RXCIE1)|(1 << TXCIE1));
+   return true;
+}
+
 
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
@@ -166,26 +234,37 @@ ISR(USART1_RX_vect)
    /* Read out */
    rx_buf.data[rx_buf.len] = UDR1;
 
+   /* Loopback on? */
+   usart_loopback();
+
    /* Mark if a CR or LF */
    if(rx_buf.data[rx_buf.len] == 0x0D ||
       rx_buf.data[rx_buf.len] == 0x0A)
    {
-      rxd_crlf = true;
+      rx_buf.data[rx_buf.len] = '\0';
+      
+      /* Invoke all registered callbacks */
+      if(usart_cbdb.num > 0)
+      {
+         for(int i = 0; i < MAX_CBS; i++)
+         {
+            if(usart_cbdb.fptr[i] != NULL)
+            {
+               usart_cbdb.fptr[i](rx_buf.data, &rx_buf.len);
+            }
+         }
+      }
    }
    /* Handle BS or DEL */
    else if(rx_buf.data[rx_buf.len] == 0x08 ||
            rx_buf.data[rx_buf.len] == 0x7F)
    {
-      rxd_crlf = false;
       rx_buf.len--;
    }
    else
    {
       rx_buf.len++;
    }
-
-   /* Loopback on? */
-   usart_loopback();
 }
 
 /* USART1 transmit complete */
@@ -197,7 +276,5 @@ ISR(USART1_TX_vect)
       UDR1 = tx_buf.data[tx_buf.idx];
       tx_buf.idx++;
    }
-
-   rxd_crlf = false;
 }
 

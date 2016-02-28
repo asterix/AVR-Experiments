@@ -1,15 +1,24 @@
-/*-----------------------------------------------------------
-- UART based text menu user interface
-- Baud = 9600
+/*---------------------------------------------------------------------------
+  
+Copyright (c) 2016, Vaibhav Desai
 
-- Author:    desai043
-- Created:   17-Feb-2016
-- Hardware:  ATMEGA32U4 on A-Star 32U4 Robot
-             Controller LV with Raspberry Pi Bridge
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-           Note: LFUSE = 0xFF, HFUSE = 0xD0
-           XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
------------------------------------------------------------*/
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------------------------------------------------------------------------
+Function:  USART/UART communication interface
+Created:   17-Feb-2016
+Hardware:  ATMega32U4 
+---------------------------------------------------------------------------*/
 
 #ifndef _USART_H_
 #define _USART_H_
@@ -30,6 +39,13 @@ typedef enum
    USART_MASTER_SYNC
 } usart_mode_t;
 
+typedef enum
+{
+   USART_TX = 0,
+   USART_RX,
+   USART_TRX
+} usart_op_t;
+
 typedef struct
 {
    char data[USART_BUFFER_SIZE];
@@ -46,15 +62,21 @@ typedef enum
 
 bool usart_setup_configure(usart_mode_t mode);
 
-void usart_reset_buffers();
+void usart_reset(void);
 
-void usart_start_send();
+void usart_reset_buffers(void);
 
-bool usart_manage_trx(usart_stat_t st);
+void usart_start_send(void);
 
-void usart_loopback();
+bool usart_manage_trx(usart_stat_t st, usart_op_t op);
 
-void usart_1_enable_interrupts();
+void usart_loopback(void);
+
+void usart_print(const char* txt);
+
+bool usart_1_enable_interrupts(void);
+
+bool usart_1_disable_interrupts(void);
 
 uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
 
