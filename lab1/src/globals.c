@@ -862,4 +862,3 @@ void throw_error(error_code_t ec)
    PORTB &= ~(1 << LED_RED);
    while(1);
 }
-

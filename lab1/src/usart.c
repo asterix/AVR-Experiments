@@ -172,7 +172,7 @@ bool usart_manage_trx(usart_stat_t st, usart_op_t op)
 
          if(op == USART_TX || op == USART_TRX)
             UCSR1B &= ~(1 << TXEN1);
-         
+
          break;
       }
       default:

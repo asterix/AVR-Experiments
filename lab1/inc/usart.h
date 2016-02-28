@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------------
-  
+
 Copyright (c) 2016, Vaibhav Desai
 
 Permission to use, copy, modify, and/or distribute this software for any
@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -----------------------------------------------------------------------------
 Function:  USART/UART communication interface
 Created:   17-Feb-2016
-Hardware:  ATMega32U4 
+Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
 #ifndef _USART_H_

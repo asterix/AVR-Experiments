@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -----------------------------------------------------------------------------
 Function:  Common peripheral configuration, helpers' interface
 Created:   17-Feb-2016
-Hardware:  ATMega32U4 
+Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
 #ifndef _GLOBALS_H_
