@@ -29,6 +29,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 /* Globals */
 volatile button_t button_a;
+volatile uint8_t motor2_dcyc;
 
 
 /* Main */
@@ -101,6 +102,9 @@ void reset_system_data_default()
    button_a.port = (uint8_t*)(&PINB);
    button_a.mask = (1 << BUTTON_A);
    button_a.stat = HIGH;
+
+   /* Startup dutycycle = 0% */
+   motor2_dcyc = 0;
 }
 
 
@@ -125,7 +129,7 @@ void initialize_local()
    /* Timer 1 - PWM - Motor */
    if(result)
    {
-      result = timer_1_setup_pfc_pwm(20000, 40);
+      result = timer_1_setup_pfc_pwm(MOTOR2_FRQ, motor2_dcyc);
    }
 
    if(!result)

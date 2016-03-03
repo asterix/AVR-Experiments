@@ -31,8 +31,11 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include "menu_uart.h"
 
 
+
+/* PWM'ing Motor 2 at 20KHz*/
 #define MOTOR2_DIR PORTE2
 #define MOTOR2_PWM PORTB6
+#define MOTOR2_FRQ 20000
 
 
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
