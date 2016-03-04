@@ -15,45 +15,12 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  PID controller
-Created:   02-Mar-2016
-Hardware:  ATMega32U4 
-
-Note: LFUSE = 0xFF, HFUSE = 0xD0
-      XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
-
+Function:  Motor controller + Encoder
+Created:   03-Mar-2016
+Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "globals.h"
-#include "usart.h"
-#include "menu_uart.h"
+#ifndef _DC_MOTOR_H_
+#define _DC_MOTOR_H_
 
-/* Motor chars */
-#define MOTOR2_GEAR_RATIO 46.85
-#define MOTOR2_ENC_CPR    48
-
-/* PWM'ing Motor 2 at 20KHz*/
-#define MOTOR2_DIR PORTE2
-#define MOTOR2_PWM PORTB6
-#define MOTOR2_FRQ 20000
-
-
-#define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
-                           { __asm__ __volatile("nop":::);}
-
-
-/* Helpers */
-void initialize_local(void);
-
-void startup_appl(void);
-
-void leds_turn_on(void);
-
-void leds_turn_off(void);
-
-void reset_system_vars(void);
-
-void reset_system_data_default(void);
-
+#endif /* _DC_MOTOR_H_ */
