@@ -49,9 +49,7 @@ typedef enum
 {
    LOW = 0,
    HIGH
-} level_t;
-
-typedef level_t button_stat_t;
+} button_stat_t;
 
 typedef void (*uart_cb_t)(char*, uint8_t*);
 

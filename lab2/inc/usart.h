@@ -15,45 +15,71 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  Motor controller + Encoder
-Created:   03-Mar-2016
+Function:  USART/UART communication interface
+Created:   17-Feb-2016
 Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
-#ifndef _DC_MOTOR_H_
-#define _DC_MOTOR_H_
+#ifndef _USART_H_
+#define _USART_H_
 
+#include <stdbool.h>
+#include <avr/interrupt.h>
 #include "globals.h"
 
+#define UART_BAUD 115200
+#define UART_SCLK (F_CPU / (8 * UART_BAUD))
+
+#define USART_BUFFER_SIZE 50
 
 typedef enum
 {
-   CW = 0,
-   CCW,
-   STP
-} motor_dir_t;
+   USART_NORMAL_ASYNC = 0,
+   USART_DOUBLE_ASYNC,
+   USART_MASTER_SYNC
+} usart_mode_t;
+
+typedef enum
+{
+   USART_TX = 0,
+   USART_RX,
+   USART_TRX
+} usart_op_t;
 
 typedef struct
 {
-   uint16_t enc_count;
-   uint8_t enc_cpr;
-   level_t enc_ch_a_stat;
-   level_t enc_ch_b_stat;
-   motor_dir_t dir;
-   uint8_t* enc_port;
-   uint8_t* dir_port;
-   uint8_t mask_dir;
-   uint8_t mask_ch_a;
-   uint8_t mask_ch_b;
-   float gear_ratio;
-} dc_motor_t;
+   char data[USART_BUFFER_SIZE];
+   uint8_t len;
+   uint8_t idx;
+} ubuffer_t;
+
+typedef enum
+{
+   U_ENABLE = 0,
+   U_DISABLE
+} usart_stat_t;
 
 
-void init_dc_motor(volatile dc_motor_t *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
-                   volatile uint8_t* dpt, uint8_t dmsk, uint8_t ecpr, float gratio);
+bool usart_setup_configure(usart_mode_t mode);
 
-void reset_dc_motor(volatile dc_motor_t *m);
+void usart_reset(void);
 
-void check_motor_encoders(volatile dc_motor_t *m);
+void usart_reset_buffers(void);
 
-#endif /* _DC_MOTOR_H_ */
+void usart_start_send(void);
+
+bool usart_manage_trx(usart_stat_t st, usart_op_t op);
+
+void usart_loopback(void);
+
+void usart_print(const char* txt);
+
+bool usart_1_enable_interrupts(void);
+
+bool usart_1_disable_interrupts(void);
+
+uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
+
+void usart_deregister_cb(uint8_t cbnum);
+
+#endif /* _UART_MENU_H_ */

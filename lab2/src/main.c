@@ -29,8 +29,6 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 /* Globals */
 volatile button_t button_a;
-volatile uint8_t motor2_dcyc;
-volatile dc_motor_t motor2;
 
 
 /* Main */
@@ -47,26 +45,21 @@ int main()
 
    /* Enable interrupts */
    sei();
+   PORTE |= (1 << MOTOR2_DIR);
 
-
-   timer_1_setdc_pfc_pwm(5);
-   char pbuf[20];
-   
    /* Main loop */
    while(1)
    {
-      while(motor2.enc_count < 2249)
+      int i;
+      for(i = 1; i < 100; i++)
       {
-         sprintf(pbuf, "%u", motor2.enc_count);
-         usart_print(pbuf);
-         usart_print("\r\n ");
+         timer_1_setdc_pfc_pwm(i);
+         _delay_ms(50);
       }
-      *motor2.dir_port ^= motor2.mask_dir;
-      while(motor2.enc_count > 0)
+      for(; i > 0; i--)
       {
-         sprintf(pbuf, "%u", motor2.enc_count);
-         usart_print(pbuf);
-         usart_print("\r\n ");
+         timer_1_setdc_pfc_pwm(i);
+         _delay_ms(50);
       }
    }
 
@@ -80,10 +73,8 @@ int main()
 void startup_appl()
 {
    /* Set port directions */
-   DDRB |= (1 << MOTOR2_PWM_PIN);
-   DDRE |= (1 << MOTOR2_DIR_PIN);
-
-   DDRB &= ~((1 << MOTOR2_ENC_CH_A)|(1 << MOTOR2_ENC_CH_B));
+   DDRB |= (1 << MOTOR2_PWM);
+   DDRE |= (1 << MOTOR2_DIR);
 
    /* Startup show */
    leds_turn_on();
@@ -98,7 +89,7 @@ void startup_appl()
 /* System vars re-init */
 void reset_system_vars()
 {
-   reset_system_data_default();
+
 }
 
 
@@ -110,13 +101,6 @@ void reset_system_data_default()
    button_a.port = (uint8_t*)(&PINB);
    button_a.mask = (1 << BUTTON_A);
    button_a.stat = HIGH;
-
-   /* Startup dutycycle = 0% */
-   motor2_dcyc = 0;
-
-   /* Motor init */
-   init_dc_motor(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B),
-                          &PORTE, (1 << MOTOR2_DIR_PIN), MOTOR2_ENC_CPR, MOTOR2_GEAR_RATIO);
 }
 
 
@@ -141,14 +125,7 @@ void initialize_local()
    /* Timer 1 - PWM - Motor */
    if(result)
    {
-      result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, motor2_dcyc);
-   }
-
-   /* Motor encoder */
-   if(result)
-   {
-      result = pcintx_enable_interrupt(PCINT4);
-      result = pcintx_enable_interrupt(PCINT5);
+      result = timer_1_setup_pfc_pwm(20000, 40);
    }
 
    if(!result)
@@ -175,15 +152,9 @@ void leds_turn_off()
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
 -----------------------------------------------------------*/
+/* ISR - Pin Change Interrupt */
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
-{
-   check_buttons();
-   check_motor_encoders(&motor2);
-}
-
-
-void check_buttons()
 {
    button_stat_t button_a_now;
 
@@ -215,3 +186,4 @@ void check_buttons()
       button_a.stat = HIGH;
    }
 }
+

@@ -29,8 +29,7 @@ VPATH   = src
 SRCS    = main.c \
           globals.c \
           usart.c \
-          menu_uart.c \
-          dc_motor.c
+          menu_uart.c
 
 OBJS    = $(addprefix $(OBJ)/,$(subst .c,.o,$(SRCS)))
 

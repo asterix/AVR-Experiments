@@ -29,19 +29,27 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include "globals.h"
 #include "usart.h"
 #include "menu_uart.h"
+#include "dc_motor.h"
+
+
+
 
 /* Motor chars */
 #define MOTOR2_GEAR_RATIO 46.85
 #define MOTOR2_ENC_CPR    48
-
-/* PWM'ing Motor 2 at 20KHz*/
-#define MOTOR2_DIR PORTE2
-#define MOTOR2_PWM PORTB6
-#define MOTOR2_FRQ 20000
+#define MOTOR2_ENC_CH_A   PORTB4
+#define MOTOR2_ENC_CH_B   PORTB5
+#define MOTOR2_DIR_PIN    PORTE2
+#define MOTOR2_PWM_PIN    PORTB6
+#define MOTOR2_FREQ       20000
 
 
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
                            { __asm__ __volatile("nop":::);}
+
+
+void check_buttons(void);
+
 
 
 /* Helpers */
