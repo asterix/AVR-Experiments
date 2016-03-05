@@ -29,6 +29,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 /* Globals */
 volatile dc_motor_typ motor2;
+volatile buffer_typ tbuf;
 
 
 /* Main */
@@ -50,14 +51,53 @@ int main()
    dc_motor_reset(&motor2);
    
    /* Main loop */
+   uint8_t cmd;
    while(1)
    {
-      
+      cmd = dequeue_command(&tbuf);
+      if(cmd != CBUF_INVL)
+      {
+         run_motor(&motor2, (motor_dir_typ)cmd);
+      }
    }
 
    return 0;
 }
 
+
+void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir)
+{
+   uint16_t target = m->enc_count;
+   int appr; uint8_t dcyc;
+   
+   switch(dir)
+   {
+      case CW:
+         target = m->enc_count + m->enc_revc;
+         break;
+      case CCW:
+         target = m->enc_count - m->enc_revc;
+         break;
+      default:
+         ;
+   }
+
+   appr = abs((int)(target - m->enc_count));
+   dc_motor_set_direction(m, dir);
+   
+   while(appr > 0)
+   {
+      appr = abs((int)(target - m->enc_count));
+      dcyc = (uint8_t)((float)appr/m->enc_revc*PWM_DC_MAX);
+
+      if(dcyc > PWM_DC_MAX) dcyc = PWM_DC_MAX;
+      if(dcyc < PWM_DC_MIN) dcyc = PWM_DC_MIN;
+
+      dc_motor_set_speed(dcyc);
+   }
+   
+   dc_motor_set_speed(0);
+}
 
 /*-----------------------------------------------------------
                       HELPERS
@@ -80,10 +120,48 @@ void startup_appl()
 }
 
 
+/* Command buffer maintainance */
+void enqueue_command(volatile buffer_typ *cbuf, uint8_t c)
+{
+   if(cbuf->full <= CBUF_SIZE)
+   {
+      cbuf->data[cbuf->widx] = c;
+      if(++cbuf->widx >= CBUF_SIZE)
+      {
+         cbuf->widx = 0;
+      }
+      cbuf->full++;
+   }
+}
+
+
+uint8_t dequeue_command(volatile buffer_typ *cbuf)
+{
+   uint8_t res = CBUF_INVL;
+   if(cbuf->full > 0)
+   {
+      res = cbuf->data[cbuf->ridx];
+      if(++cbuf->ridx >= CBUF_SIZE)
+      {
+         cbuf->ridx = 0;
+      }
+      cbuf->full--;
+   }
+   return res;
+}
+
+
+void reset_cbuffer(volatile buffer_typ *cbuf)
+{
+   cbuf->full = cbuf->ridx = cbuf->widx = 0;
+}
+
+
 /* System vars re-init */
 void reset_system_vars()
 {
    reset_system_data_default();
+   reset_cbuffer(&tbuf);
 }
 
 
@@ -92,8 +170,8 @@ void reset_system_data_default()
 {
    /* Motor init */
    dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
-   dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B),
-                          &PORTE, (1 << MOTOR2_DIR_PIN), MOTOR2_ENC_CPR, MOTOR2_GEAR_RATIO);
+   dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B), &PORTE,
+                     (1 << MOTOR2_DIR_PIN), (uint16_t)(MOTOR2_ENC_CPR * MOTOR2_GEAR_RATIO));
 }
 
 
@@ -102,31 +180,20 @@ void initialize_local()
 {
    /* Setup PCINTx interrupts for buttons */
    bool result = pcintx_enable_interrupt(PCINT3);
+   if(result) result = pcintx_enable_interrupt(PCINT0);
 
    /* Enable UART rx/tx interrupts */
-   if(result)
-   {
-      result = usart_1_enable_interrupts();
-   }
+   if(result) result = usart_1_enable_interrupts();
 
    /* Initialize USART for communication */
-   if(result)
-   {
-      result = usart_setup_configure(USART_DOUBLE_ASYNC);
-   }
+   if(result) result = usart_setup_configure(USART_DOUBLE_ASYNC);
 
    /* Timer 1 - PWM - Motor */
-   if(result)
-   {
-      result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
-   }
+   if(result) result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
 
    /* Motor encoder */
-   if(result)
-   {
-      result = pcintx_enable_interrupt(PCINT4);
-      result = pcintx_enable_interrupt(PCINT5);
-   }
+   if(result) result = pcintx_enable_interrupt(PCINT4);
+   if(result) result = pcintx_enable_interrupt(PCINT5);
 
    if(!result)
    {
@@ -191,10 +258,12 @@ void check_buttons()
              switch(btn->name)
              {
                 case 'A':
-                   // Add forward
+                   /* Forward */
+                   enqueue_command(&tbuf, CW);
                    break;
                 case 'C':
-                   // Add reverse
+                   /* Reverse */
+                   enqueue_command(&tbuf, CCW);
                    break;
                 default:
                    break;

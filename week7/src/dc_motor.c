@@ -28,13 +28,12 @@ void (*speed_control)(uint8_t);
 
 /* Basic struct init */
 void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
-                   volatile uint8_t* dpt, uint8_t dmsk, uint8_t ecpr, float gratio)
+                   volatile uint8_t* dpt, uint8_t dmsk, uint16_t erevc)
 {
    m->enc_count = 0;
    m->enc_ch_a_stat = LOW;
    m->enc_ch_b_stat = LOW;
-   m->enc_cpr = ecpr;
-   m->gear_ratio = gratio;
+   m->enc_revc = erevc;
    m->enc_port = (uint8_t*)(ept);
    m->mask_ch_a = amsk;
    m->mask_ch_b = bmsk;

@@ -36,7 +36,7 @@ typedef enum
 typedef struct
 {
    uint16_t enc_count;
-   uint8_t enc_cpr;
+   uint16_t enc_revc;
    level_typ enc_ch_a_stat;
    level_typ enc_ch_b_stat;
    motor_dir_typ dir;
@@ -45,12 +45,11 @@ typedef struct
    uint8_t mask_dir;
    uint8_t mask_ch_a;
    uint8_t mask_ch_b;
-   float gear_ratio;
 } dc_motor_typ;
 
 
 void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
-                   volatile uint8_t* dpt, uint8_t dmsk, uint8_t ecpr, float gratio);
+                   volatile uint8_t* dpt, uint8_t dmsk, uint16_t erevc);
 
 void dc_motor_reset(volatile dc_motor_typ *m);
 
