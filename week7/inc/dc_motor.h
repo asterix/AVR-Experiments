@@ -31,29 +31,38 @@ typedef enum
    CW = 0,
    CCW,
    STP
-} motor_dir_t;
+} motor_dir_typ;
 
 typedef struct
 {
    uint16_t enc_count;
    uint8_t enc_cpr;
-   level_t enc_ch_a_stat;
-   level_t enc_ch_b_stat;
-   motor_dir_t dir;
+   level_typ enc_ch_a_stat;
+   level_typ enc_ch_b_stat;
+   motor_dir_typ dir;
    uint8_t* enc_port;
    uint8_t* dir_port;
    uint8_t mask_dir;
    uint8_t mask_ch_a;
    uint8_t mask_ch_b;
    float gear_ratio;
-} dc_motor_t;
+} dc_motor_typ;
 
 
-void init_dc_motor(volatile dc_motor_t *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
+void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
                    volatile uint8_t* dpt, uint8_t dmsk, uint8_t ecpr, float gratio);
 
-void reset_dc_motor(volatile dc_motor_t *m);
+void dc_motor_reset(volatile dc_motor_typ *m);
 
-void check_motor_encoders(volatile dc_motor_t *m);
+void dc_motor_check_encoders(volatile dc_motor_typ *m);
+
+void dc_motor_set_direction(volatile dc_motor_typ *m, motor_dir_typ dir);
+
+void dc_motor_set_speed(uint8_t dc);
+
+void dc_motor_reg_speed_fn(void (*fptr)(uint8_t dc));
+
+void dc_motor_dir_calibrate(volatile dc_motor_typ *m);
+
 
 #endif /* _DC_MOTOR_H_ */

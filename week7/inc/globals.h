@@ -26,22 +26,24 @@ Hardware:  ATMega32U4
 #define F_CPU 16000000
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-#define BUTTON_A PB3 // PCINT3
-#define BUTTON_B PD5
-#define BUTTON_C PB0 // PCINT0
 
+
+#define BUTTON_A   PB3 /* PCINT3 */
+#define BUTTON_B   PD5
+#define BUTTON_C   PB0 /* PCINT0 */
 #define LED_YELLOW PORTC7
 #define LED_GREEN  PORTD5
 #define LED_RED    PORTB0
 
-#define NUM_16BIT_MAX   65535
-#define DEBOUNCE_DELAY  20    /* Jitter time (ms) */
+#define MAX_16BIT   65535
+#define DBNCE_DELAY 10    /* Jitter time (ms) */
 
-#define MAX_CBS   3
+#define MAX_CBS     3
 
 
 /* HIGH and LOW for buttons */
@@ -49,9 +51,9 @@ typedef enum
 {
    LOW = 0,
    HIGH
-} level_t;
+} level_typ;
 
-typedef level_t button_stat_t;
+typedef level_typ button_stat_t;
 
 typedef void (*uart_cb_t)(char*, uint8_t*);
 
@@ -72,6 +74,7 @@ typedef enum ec
    ERR_GENERC
 } error_code_t;
 
+
 /* Button management */
 typedef struct
 {
@@ -81,6 +84,15 @@ typedef struct
    button_stat_t stat;
 } button_t;
 
+
+typedef struct button_list
+{
+   button_t button;
+   struct button_list *next;
+} button_list_t;
+
+
+/* Timers */
 typedef enum
 {
    PRESC_1 = 1,
@@ -106,6 +118,8 @@ void pll_configure_tclk_source_freq(void);
 void initialize_basic(void);
 
 void throw_error(error_code_t ec);
+
+void setup_buttons(void);
 
 void startup_pattern_show(void);
 

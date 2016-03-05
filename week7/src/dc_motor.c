@@ -22,8 +22,12 @@ Hardware:  ATMega32U4
 
 #include "dc_motor.h"
 
+/* Speed controller */
+void (*speed_control)(uint8_t);
+
+
 /* Basic struct init */
-void init_dc_motor(volatile dc_motor_t *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
+void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
                    volatile uint8_t* dpt, uint8_t dmsk, uint8_t ecpr, float gratio)
 {
    m->enc_count = 0;
@@ -40,20 +44,22 @@ void init_dc_motor(volatile dc_motor_t *m, volatile uint8_t* ept, uint8_t amsk, 
 }
 
 
-void reset_dc_motor(volatile dc_motor_t *m)
+void dc_motor_reset(volatile dc_motor_typ *m)
 {
    m->enc_count = 0;
    m->enc_ch_a_stat = LOW;
    m->enc_ch_b_stat = LOW;
    m->dir = STP;
+
+   dc_motor_dir_calibrate(m);
 }
 
 
 /* Monitor quadrature encoder channels */
-void check_motor_encoders(volatile dc_motor_t *m)
+void dc_motor_check_encoders(volatile dc_motor_typ *m)
 {
-   level_t ch_a_now = (*m->enc_port & m->mask_ch_a)? HIGH : LOW;
-   level_t ch_b_now = (*m->enc_port & m->mask_ch_b)? HIGH : LOW;
+   level_typ ch_a_now = (*m->enc_port & m->mask_ch_a)? HIGH : LOW;
+   level_typ ch_b_now = (*m->enc_port & m->mask_ch_b)? HIGH : LOW;
 
    /* Ch-A(old)^Ch-B(new) = 0 (or Ch-A(new)^Ch-B(old) = 1) => CW */
    if(ch_a_now ^ m->enc_ch_b_stat)
@@ -66,3 +72,67 @@ void check_motor_encoders(volatile dc_motor_t *m)
    m->enc_ch_a_stat = ch_a_now;
    m->enc_ch_b_stat = ch_b_now;
 }
+
+
+/* Change direction? */
+void dc_motor_set_direction(volatile dc_motor_typ *m, motor_dir_typ dir)
+{
+   if(m->dir == dir)
+   {
+      *m->dir_port |= m->mask_dir;
+   }
+   else
+   {
+      *m->dir_port &= ~(m->mask_dir);
+   }
+}
+
+
+/* Speed control - PWM dc based */
+void dc_motor_set_speed(uint8_t dc)
+{
+   speed_control(dc);
+}
+
+
+/* Register speed control function */
+void dc_motor_reg_speed_fn(void (*fptr)(uint8_t dc))
+{
+   speed_control = fptr;
+}
+
+
+/* Calibrate direction */
+void dc_motor_dir_calibrate(volatile dc_motor_typ *m)
+{
+   /* Turn off */
+   dc_motor_set_speed(0);
+
+   uint16_t c1 = m->enc_count = 1000;
+
+   /* Set DIR bit, run for a short time */
+   *m->dir_port |= m->mask_dir;
+   
+   dc_motor_set_speed(25);
+   _delay_ms(500);
+   dc_motor_set_speed(0);
+
+   uint16_t c2 = m->enc_count;
+
+   /* Decide which way is CW */
+   if(c2 > c1)
+   {
+      m->dir = CW;
+   }
+   else if(c1 > c2)
+   {
+      m->dir = CCW;
+   }
+   else
+   {
+      throw_error(ERR_PERIPH);
+   }
+
+   m->enc_count = 0;
+}
+

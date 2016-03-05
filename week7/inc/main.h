@@ -32,7 +32,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include "dc_motor.h"
 
 
-
+extern button_list_t *buttons;
 
 /* Motor chars */
 #define MOTOR2_GEAR_RATIO 46.85

@@ -28,9 +28,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 
 /* Globals */
-volatile button_t button_a;
-volatile uint8_t motor2_dcyc;
-volatile dc_motor_t motor2;
+volatile dc_motor_typ motor2;
 
 
 /* Main */
@@ -39,35 +37,22 @@ int main()
    /* Init generic */
    initialize_basic();
 
-   /* Startup */
-   startup_appl();
-
    /* Init application specific */
    initialize_local();
 
+   /* Startup */
+   startup_appl();
+
    /* Enable interrupts */
    sei();
-
-
-   timer_1_setdc_pfc_pwm(5);
-   char pbuf[20];
+   
+   /* Calibrate DC Motor */
+   dc_motor_reset(&motor2);
    
    /* Main loop */
    while(1)
    {
-      while(motor2.enc_count < 2249)
-      {
-         sprintf(pbuf, "%u", motor2.enc_count);
-         usart_print(pbuf);
-         usart_print("\r\n ");
-      }
-      *motor2.dir_port ^= motor2.mask_dir;
-      while(motor2.enc_count > 0)
-      {
-         sprintf(pbuf, "%u", motor2.enc_count);
-         usart_print(pbuf);
-         usart_print("\r\n ");
-      }
+      
    }
 
    return 0;
@@ -105,17 +90,9 @@ void reset_system_vars()
 /* Default startup config */
 void reset_system_data_default()
 {
-   /* Setup Button A */
-   button_a.name = 'A';
-   button_a.port = (uint8_t*)(&PINB);
-   button_a.mask = (1 << BUTTON_A);
-   button_a.stat = HIGH;
-
-   /* Startup dutycycle = 0% */
-   motor2_dcyc = 0;
-
    /* Motor init */
-   init_dc_motor(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B),
+   dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
+   dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B),
                           &PORTE, (1 << MOTOR2_DIR_PIN), MOTOR2_ENC_CPR, MOTOR2_GEAR_RATIO);
 }
 
@@ -141,7 +118,7 @@ void initialize_local()
    /* Timer 1 - PWM - Motor */
    if(result)
    {
-      result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, motor2_dcyc);
+      result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
    }
 
    /* Motor encoder */
@@ -179,39 +156,61 @@ void leds_turn_off()
 ISR(PCINT0_vect)
 {
    check_buttons();
-   check_motor_encoders(&motor2);
+   dc_motor_check_encoders(&motor2);
 }
 
 
+/* Check all button presses */
 void check_buttons()
 {
-   button_stat_t button_a_now;
+   button_t *btn;
+   button_list_t *iter = buttons;
+   button_stat_t button_now;
 
-   /* Button A */
-   if(*button_a.port & button_a.mask)
+   do
    {
-      button_a_now = HIGH;
-   }
-   else
-   {
-      button_a_now = LOW;
-   }
+      btn = &iter->button;
 
-   /* HIGH -> LOW = Press */
-   if(button_a.stat == HIGH && button_a_now == LOW)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-
-      /* Sample again */
-      if(!(*button_a.port & button_a.mask))
+      if(*btn->port & btn->mask)
       {
-          button_a.stat = LOW;
+         button_now = HIGH;
       }
-   }
-   /* LOW -> HIGH = release */
-   else if(button_a.stat == LOW && button_a_now == HIGH)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
-      button_a.stat = HIGH;
-   }
+      else
+      {
+         button_now = LOW;
+      }
+   
+      /* HIGH -> LOW = Press */
+      if(btn->stat == HIGH && button_now == LOW)
+      {
+         _delay_ms(DBNCE_DELAY);
+   
+         /* Sample again */
+         if(!(*btn->port & btn->mask))
+         {
+             switch(btn->name)
+             {
+                case 'A':
+                   // Add forward
+                   break;
+                case 'C':
+                   // Add reverse
+                   break;
+                default:
+                   break;
+             }
+             btn->stat = LOW;
+         }
+      }
+      /* LOW -> HIGH = release */
+      else if(btn->stat == LOW && button_now == HIGH)
+      {
+         _delay_ms(DBNCE_DELAY);
+         btn->stat = HIGH;
+      }
+
+      iter = iter->next;
+
+   } while(iter != NULL);
 }
+

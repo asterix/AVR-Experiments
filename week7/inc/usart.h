@@ -78,8 +78,8 @@ bool usart_1_enable_interrupts(void);
 
 bool usart_1_disable_interrupts(void);
 
-uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
+uint8_t usart_register_rx_cb(void (*cb)(char* data, uint8_t* len));
 
-void usart_deregister_cb(uint8_t cbnum);
+void usart_deregister_rx_cb(uint8_t cbnum);
 
 #endif /* _UART_MENU_H_ */

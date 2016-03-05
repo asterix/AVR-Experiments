@@ -22,6 +22,12 @@ Hardware:  ATMega32U4
 
 #include "globals.h"
 
+/*-----------------------------------------------------------
+                COMMON GLOBAL VARIABLES
+-----------------------------------------------------------*/
+button_list_t *buttons;
+
+
 
 /*-----------------------------------------------------------
                     INITIALIZATION
@@ -57,15 +63,43 @@ void initialize_basic()
    DDRC |= (1 << LED_YELLOW);
    DDRD |= (1 << LED_GREEN);
 
+   setup_buttons();
+
+   /* Show a startup pattern */
+   startup_pattern_show();
+}
+
+
+void setup_buttons()
+{
+   button_list_t *b;
+
    /* Configure Button pins to input */
    DDRB &= ~((1 << BUTTON_A) | (1 << BUTTON_C));
 
    /* Enable pull-ups on input pins */
    PORTB |= ((1 << BUTTON_A) | (1 << BUTTON_C));
 
-   /* Show a startup pattern */
-   startup_pattern_show();
+   /* Setup Button A */
+   buttons = malloc(sizeof(button_list_t));
+   b = buttons;
+
+   b->button.name = 'A';
+   b->button.port = (uint8_t*)(&PINB);
+   b->button.mask = (1 << BUTTON_A);
+   b->button.stat = HIGH;
+
+   /* Setup Button C */
+   b->next = malloc(sizeof(button_list_t));
+   b = b->next;
+
+   b->button.name = 'C';
+   b->button.port = (uint8_t*)(&PINB);
+   b->button.mask = (1 << BUTTON_C);
+   b->button.stat = HIGH;
+   b->next = NULL;
 }
+
 
 void startup_pattern_show()
 {
