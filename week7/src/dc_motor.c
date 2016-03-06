@@ -22,6 +22,7 @@ Hardware:  ATMega32U4
 
 #include "dc_motor.h"
 
+
 /* Speed controller */
 void (*speed_control)(uint8_t) = NULL;
 
@@ -43,6 +44,7 @@ void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk
 }
 
 
+/* Reset & calibrate directions */
 void dc_motor_reset(volatile dc_motor_typ *m)
 {
    m->enc_count = 0;

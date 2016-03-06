@@ -38,7 +38,7 @@ typedef enum
 {
    TSK_FWD = 0,
    TSK_REV
-} task_name_t;
+} task_name_typ;
 
 
 

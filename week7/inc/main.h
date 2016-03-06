@@ -15,7 +15,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  PID controller
+Function:  Motor controller
 Created:   02-Mar-2016
 Hardware:  ATMega32U4 
 
@@ -33,7 +33,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include "dc_motor.h"
 
 
-extern button_list_t *buttons;
+extern button_list_typ *buttons;
 
 
 /* Motor chars */

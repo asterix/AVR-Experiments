@@ -24,11 +24,11 @@ Hardware:  ATMega32U4
 #include <stdlib.h>
 
 /* USART buffers */
-static ubuffer_t rx_buf;
-static ubuffer_t tx_buf;
+static ubuffer_typ rx_buf;
+static ubuffer_typ tx_buf;
 
 /* USART rx/tx callbacks */
-static volatile callback_db_t usart_rx_cbdb;
+static volatile callback_db_typ usart_rx_cbdb;
 
 /* Reset rx/tx buffers, cb db */
 void usart_reset()
@@ -87,7 +87,7 @@ void usart_deregister_rx_cb(uint8_t cbnum)
 }
 
 /* Configure USART module */
-bool usart_setup_configure(usart_mode_t mode)
+bool usart_setup_configure(usart_mode_typ mode)
 {
    bool result = true;
    usart_reset();
@@ -150,7 +150,7 @@ bool usart_setup_configure(usart_mode_t mode)
 }
 
 /* Enable rx/tx */
-bool usart_manage_trx(usart_stat_t st, usart_op_t op)
+bool usart_manage_trx(usart_stat_typ st, usart_op_typ op)
 {
    bool result = true;
    switch(st)

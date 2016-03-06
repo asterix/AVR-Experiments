@@ -15,8 +15,8 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  PID Controller
-Created:   01-Mar-2016
+Function:  Motor controller
+Created:   02-Mar-2016
 Hardware:  ATMega32U4
 
 Note: LFUSE = 0xFF, HFUSE = 0xD0
@@ -65,6 +65,7 @@ int main()
 }
 
 
+/* Execute command */
 void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir)
 {
    uint16_t target = m->enc_count;
@@ -175,7 +176,7 @@ void reset_system_data_default()
 }
 
 
-/* Configure interrupts */
+/* Configure peripherals */
 void initialize_local()
 {
    /* Setup PCINTx interrupts for buttons */
@@ -251,18 +252,19 @@ void handle_uart_inputs(char* buf, uint8_t* len)
       }
    }
 
+   usart_print("\r\n");
+
    /* Clear buffers */
    usart_reset_buffers();
 }
 
 
-
 /* Check all button presses */
 void check_buttons()
 {
-   button_t *btn;
-   button_list_t *iter = buttons;
-   button_stat_t button_now;
+   button_typ *btn;
+   button_list_typ *iter = buttons;
+   button_stat_typ button_now;
 
    do
    {
