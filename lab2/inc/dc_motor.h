@@ -15,71 +15,53 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  USART/UART communication interface
-Created:   17-Feb-2016
+Function:  Motor controller + Encoder
+Created:   03-Mar-2016
 Hardware:  ATMega32U4
 ---------------------------------------------------------------------------*/
 
-#ifndef _USART_H_
-#define _USART_H_
+#ifndef _DC_MOTOR_H_
+#define _DC_MOTOR_H_
 
-#include <stdbool.h>
-#include <avr/interrupt.h>
 #include "globals.h"
 
-#define UART_BAUD 115200
-#define UART_SCLK (F_CPU / (8 * UART_BAUD))
-
-#define USART_BUFFER_SIZE 50
 
 typedef enum
 {
-   USART_NORMAL_ASYNC = 0,
-   USART_DOUBLE_ASYNC,
-   USART_MASTER_SYNC
-} usart_mode_typ;
-
-typedef enum
-{
-   USART_TX = 0,
-   USART_RX,
-   USART_TRX
-} usart_op_typ;
+   CW = 0,
+   CCW,
+   STP
+} motor_dir_typ;
 
 typedef struct
 {
-   char data[USART_BUFFER_SIZE];
-   uint8_t len;
-   uint8_t idx;
-} ubuffer_typ;
+   uint16_t enc_count;
+   uint16_t enc_revc;
+   level_typ enc_ch_a_stat;
+   level_typ enc_ch_b_stat;
+   motor_dir_typ dir;
+   uint8_t* enc_port;
+   uint8_t* dir_port;
+   uint8_t mask_dir;
+   uint8_t mask_ch_a;
+   uint8_t mask_ch_b;
+} dc_motor_typ;
 
-typedef enum
-{
-   U_ENABLE = 0,
-   U_DISABLE
-} usart_stat_typ;
+
+void dc_motor_init(volatile dc_motor_typ *m, volatile uint8_t* ept, uint8_t amsk, uint8_t bmsk,
+                   volatile uint8_t* dpt, uint8_t dmsk, uint16_t erevc);
+
+void dc_motor_reset(volatile dc_motor_typ *m);
+
+void dc_motor_check_encoders(volatile dc_motor_typ *m);
+
+void dc_motor_set_direction(volatile dc_motor_typ *m, motor_dir_typ dir);
+
+void dc_motor_set_speed(uint8_t dc);
+
+void dc_motor_reg_speed_fn(void (*fptr)(uint8_t dc));
+
+void dc_motor_dir_calibrate(volatile dc_motor_typ *m);
 
 
-bool usart_setup_configure(usart_mode_typ mode);
-
-void usart_reset(void);
-
-void usart_reset_buffers(void);
-
-void usart_start_send(void);
-
-bool usart_manage_trx(usart_stat_typ st, usart_op_typ op);
-
-void usart_loopback(void);
-
-void usart_print(const char* txt);
-
-bool usart_1_enable_interrupts(void);
-
-bool usart_1_disable_interrupts(void);
-
-uint8_t usart_register_rx_cb(void (*cb)(char* data, uint8_t* len));
-
-void usart_deregister_rx_cb(uint8_t cbnum);
-
-#endif /* _UART_MENU_H_ */
+#endif /* _DC_MOTOR_H_ */

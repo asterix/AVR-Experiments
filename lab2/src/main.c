@@ -15,8 +15,8 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  PID Controller
-Created:   01-Mar-2016
+Function:  Motor controller
+Created:   02-Mar-2016
 Hardware:  ATMega32U4
 
 Note: LFUSE = 0xFF, HFUSE = 0xD0
@@ -28,7 +28,8 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 
 /* Globals */
-volatile button_t button_a;
+volatile dc_motor_typ motor2;
+volatile buffer_typ tbuf;
 
 
 /* Main */
@@ -37,29 +38,26 @@ int main()
    /* Init generic */
    initialize_basic();
 
-   /* Startup */
-   startup_appl();
-
    /* Init application specific */
    initialize_local();
 
+   /* Startup */
+   startup_appl();
+
    /* Enable interrupts */
    sei();
-   PORTE |= (1 << MOTOR2_DIR);
-
+   
+   /* Calibrate DC Motor */
+   dc_motor_reset(&motor2);
+   
    /* Main loop */
+   uint8_t cmd;
    while(1)
    {
-      int i;
-      for(i = 1; i < 100; i++)
+      cmd = dequeue_command(&tbuf);
+      if(cmd != CBUF_INVL)
       {
-         timer_1_setdc_pfc_pwm(i);
-         _delay_ms(50);
-      }
-      for(; i > 0; i--)
-      {
-         timer_1_setdc_pfc_pwm(i);
-         _delay_ms(50);
+         run_motor(&motor2, (motor_dir_typ)cmd);
       }
    }
 
@@ -67,14 +65,51 @@ int main()
 }
 
 
+/* Execute command */
+void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir)
+{
+   uint16_t target = m->enc_count;
+   int appr; uint8_t dcyc;
+   
+   switch(dir)
+   {
+      case CW:
+         target = m->enc_count + m->enc_revc;
+         break;
+      case CCW:
+         target = m->enc_count - m->enc_revc;
+         break;
+      default:
+         ;
+   }
+
+   appr = abs((int)(target - m->enc_count));
+   dc_motor_set_direction(m, dir);
+   
+   while(appr > 0)
+   {
+      appr = abs((int)(target - m->enc_count));
+      dcyc = (uint8_t)((float)appr/m->enc_revc*PWM_DC_MAX);
+
+      if(dcyc > PWM_DC_MAX) dcyc = PWM_DC_MAX;
+      if(dcyc < PWM_DC_MIN) dcyc = PWM_DC_MIN;
+
+      dc_motor_set_speed(dcyc);
+   }
+   
+   dc_motor_set_speed(0);
+}
+
 /*-----------------------------------------------------------
                       HELPERS
 -----------------------------------------------------------*/
 void startup_appl()
 {
    /* Set port directions */
-   DDRB |= (1 << MOTOR2_PWM);
-   DDRE |= (1 << MOTOR2_DIR);
+   DDRB |= (1 << MOTOR2_PWM_PIN);
+   DDRE |= (1 << MOTOR2_DIR_PIN);
+
+   DDRB &= ~((1 << MOTOR2_ENC_CH_A)|(1 << MOTOR2_ENC_CH_B));
 
    /* Startup show */
    leds_turn_on();
@@ -86,47 +121,81 @@ void startup_appl()
 }
 
 
+/* Command buffer maintainance */
+void enqueue_command(volatile buffer_typ *cbuf, uint8_t c)
+{
+   if(cbuf->full <= CBUF_SIZE)
+   {
+      cbuf->data[cbuf->widx] = c;
+      if(++cbuf->widx >= CBUF_SIZE)
+      {
+         cbuf->widx = 0;
+      }
+      cbuf->full++;
+   }
+}
+
+
+uint8_t dequeue_command(volatile buffer_typ *cbuf)
+{
+   uint8_t res = CBUF_INVL;
+   if(cbuf->full > 0)
+   {
+      res = cbuf->data[cbuf->ridx];
+      if(++cbuf->ridx >= CBUF_SIZE)
+      {
+         cbuf->ridx = 0;
+      }
+      cbuf->full--;
+   }
+   return res;
+}
+
+
+void reset_cbuffer(volatile buffer_typ *cbuf)
+{
+   cbuf->full = cbuf->ridx = cbuf->widx = 0;
+}
+
+
 /* System vars re-init */
 void reset_system_vars()
 {
-
+   reset_system_data_default();
+   reset_cbuffer(&tbuf);
 }
 
 
 /* Default startup config */
 void reset_system_data_default()
 {
-   /* Setup Button A */
-   button_a.name = 'A';
-   button_a.port = (uint8_t*)(&PINB);
-   button_a.mask = (1 << BUTTON_A);
-   button_a.stat = HIGH;
+   /* Motor init */
+   dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
+   dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B), &PORTE,
+                     (1 << MOTOR2_DIR_PIN), (uint16_t)(MOTOR2_ENC_CPR * MOTOR2_GEAR_RATIO));
 }
 
 
-/* Configure interrupts */
+/* Configure peripherals */
 void initialize_local()
 {
    /* Setup PCINTx interrupts for buttons */
    bool result = pcintx_enable_interrupt(PCINT3);
-
-   /* Enable UART rx/tx interrupts */
-   if(result)
-   {
-      result = usart_1_enable_interrupts();
-   }
+   if(result) result = pcintx_enable_interrupt(PCINT0);
 
    /* Initialize USART for communication */
-   if(result)
-   {
-      result = usart_setup_configure(USART_DOUBLE_ASYNC);
-   }
+   if(result) result = usart_setup_configure(USART_DOUBLE_ASYNC);
+   
+   /* Enable UART interrupts, callback registration */
+   if(result) result = usart_1_enable_interrupts();
+   if(result) usart_register_rx_cb(handle_uart_inputs);
 
    /* Timer 1 - PWM - Motor */
-   if(result)
-   {
-      result = timer_1_setup_pfc_pwm(20000, 40);
-   }
+   if(result) result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
+
+   /* Motor encoder */
+   if(result) result = pcintx_enable_interrupt(PCINT4);
+   if(result) result = pcintx_enable_interrupt(PCINT5);
 
    if(!result)
    {
@@ -152,38 +221,97 @@ void leds_turn_off()
 /*-----------------------------------------------------------
              INTERRUPT SERVICE ROUTINES
 -----------------------------------------------------------*/
-/* ISR - Pin Change Interrupt */
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
 {
-   button_stat_t button_a_now;
+   check_buttons();
+   dc_motor_check_encoders(&motor2);
+}
 
-   /* Button A */
-   if(*button_a.port & button_a.mask)
-   {
-      button_a_now = HIGH;
-   }
-   else
-   {
-      button_a_now = LOW;
-   }
 
-   /* HIGH -> LOW = Press */
-   if(button_a.stat == HIGH && button_a_now == LOW)
-   {
-      _delay_ms(DEBOUNCE_DELAY);
+/* UART callback */
+void handle_uart_inputs(char* buf, uint8_t* len)
+{
+   char op; int nargs = 0;
 
-      /* Sample again */
-      if(!(*button_a.port & button_a.mask))
+   /* Match with available options/format */
+   nargs = sscanf((const char*)buf, "%c", &op);
+
+   if(nargs >= 1)
+   {
+      switch(op)
       {
-          button_a.stat = LOW;
+         case 'f':
+            enqueue_command(&tbuf, CW);
+            break;
+         case 'r':
+            enqueue_command(&tbuf, CCW);
+            break;
+         default:
+            ;
       }
    }
-   /* LOW -> HIGH = release */
-   else if(button_a.stat == LOW && button_a_now == HIGH)
+
+   usart_print("\r\n");
+
+   /* Clear buffers */
+   usart_reset_buffers();
+}
+
+
+/* Check all button presses */
+void check_buttons()
+{
+   button_typ *btn;
+   button_list_typ *iter = buttons;
+   button_stat_typ button_now;
+
+   do
    {
-      _delay_ms(DEBOUNCE_DELAY);
-      button_a.stat = HIGH;
-   }
+      btn = &iter->button;
+
+      if(*btn->port & btn->mask)
+      {
+         button_now = HIGH;
+      }
+      else
+      {
+         button_now = LOW;
+      }
+   
+      /* HIGH -> LOW = Press */
+      if(btn->stat == HIGH && button_now == LOW)
+      {
+         _delay_ms(DBNCE_DELAY);
+   
+         /* Sample again */
+         if(!(*btn->port & btn->mask))
+         {
+             switch(btn->name)
+             {
+                case 'A':
+                   /* Forward */
+                   enqueue_command(&tbuf, CW);
+                   break;
+                case 'C':
+                   /* Reverse */
+                   enqueue_command(&tbuf, CCW);
+                   break;
+                default:
+                   break;
+             }
+             btn->stat = LOW;
+         }
+      }
+      /* LOW -> HIGH = release */
+      else if(btn->stat == LOW && button_now == HIGH)
+      {
+         _delay_ms(DBNCE_DELAY);
+         btn->stat = HIGH;
+      }
+
+      iter = iter->next;
+
+   } while(iter != NULL);
 }
 

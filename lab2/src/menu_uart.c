@@ -45,7 +45,7 @@ void menu_uart_prompt()
    usart_manage_trx(U_ENABLE, USART_TRX);
 
    /* Register callback handler */
-   uint8_t cb_id = usart_register_cb(handle_user_inputs);
+   uint8_t cb_id = usart_register_rx_cb(handle_user_inputs);
 
    /* Read & print menu prompt from flash */
    int msg_len = strlen_P(menu_options);
@@ -68,7 +68,7 @@ void menu_uart_prompt()
    }
 
    /* Remove any callbacks */
-   usart_deregister_cb(cb_id);
+   usart_deregister_rx_cb(cb_id);
    done = false;
 }
 
@@ -95,12 +95,14 @@ void handle_user_inputs(char* buf, uint8_t* len)
       {
          case 'f':
          {
-            usart_print("Forward\r\n");
+            usart_print("Queued forward (CW)\r\n");
+            done = true;
             break;
          }
          case 'r':
          {
-            usart_print("Forward\r\n");
+            usart_print("Queued reverse (CCW)\r\n");
+            done = true;
             break;
          }
          default:
