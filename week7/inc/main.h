@@ -29,7 +29,6 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 #include <math.h>
 #include "globals.h"
 #include "usart.h"
-#include "menu_uart.h"
 #include "dc_motor.h"
 
 
