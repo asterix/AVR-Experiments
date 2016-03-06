@@ -1,7 +1,7 @@
 # Solution Comments
 
 ## Description
-The software is approach based dynamic PWM which will speed up or slow down the DC Motor depending on how far the current position is from target. Although stepper motors are better suited for such position control, this control approach works fine within the bounds of brushed DC Motors errors.
+The software is approach based dynamic PWM which will speed up or slow down the DC Motor depending on how far the current position is from target. Although stepper motors are better suited for such position control, this control approach works fine within the bounds of brushed DC Motor errors.
 
 
 ## Wiring & Connections
@@ -9,11 +9,12 @@ Wiring for this is pretty standard as required by the problem statement, but I w
 ```
 Motor PWM control  - PORTB6 (OC1B)
 Motor direction    - PORTE2
-Encoder A (Yellow) - PORTB4
-Encoder B (White)  - PORTB5
-Encoder Vcc (Blue) - 5V
-Motor +            - Motor 2+ DRV8838
-Motor -            - Motor 2- DRV8838
+Encoder A (yellow) - PORTB4
+Encoder B (white)  - PORTB5
+Encoder Vcc (blue) - 5V
+Encoder Gnd (green)- GND
+M2A (DRV8838)  - Motor 2- (black)
+M2B (DRV8838)  - Motor 2+ (red)
 UART communication - TX1 = PORTD1, RX1 = PORTD0
 ```
 
