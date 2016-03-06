@@ -182,11 +182,12 @@ void initialize_local()
    bool result = pcintx_enable_interrupt(PCINT3);
    if(result) result = pcintx_enable_interrupt(PCINT0);
 
-   /* Enable UART rx/tx interrupts */
-   if(result) result = usart_1_enable_interrupts();
-
    /* Initialize USART for communication */
    if(result) result = usart_setup_configure(USART_DOUBLE_ASYNC);
+   
+   /* Enable UART interrupts, callback registration */
+   if(result) result = usart_1_enable_interrupts();
+   if(result) usart_register_rx_cb(handle_uart_inputs);
 
    /* Timer 1 - PWM - Motor */
    if(result) result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
@@ -225,6 +226,35 @@ ISR(PCINT0_vect)
    check_buttons();
    dc_motor_check_encoders(&motor2);
 }
+
+
+/* UART callback */
+void handle_uart_inputs(char* buf, uint8_t* len)
+{
+   char op; int nargs = 0;
+
+   /* Match with available options/format */
+   nargs = sscanf((const char*)buf, "%c", &op);
+
+   if(nargs >= 1)
+   {
+      switch(op)
+      {
+         case 'f':
+            enqueue_command(&tbuf, CW);
+            break;
+         case 'r':
+            enqueue_command(&tbuf, CCW);
+            break;
+         default:
+            ;
+      }
+   }
+
+   /* Clear buffers */
+   usart_reset_buffers();
+}
+
 
 
 /* Check all button presses */

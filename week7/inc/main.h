@@ -46,7 +46,7 @@ extern button_list_t *buttons;
 #define MOTOR2_FREQ       20000
 
 /* Absolute response duty cycles */
-#define PWM_DC_MAX        60
+#define PWM_DC_MAX        25
 #define PWM_DC_MIN        5
 
 
@@ -54,6 +54,7 @@ extern button_list_t *buttons;
                            { __asm__ __volatile("nop":::);}
 
 
+/* Buffer for commands */
 #define CBUF_SIZE  100
 #define CBUF_INVL  0xFF
 
@@ -67,6 +68,8 @@ typedef struct
 
 
 void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir);
+
+void handle_uart_inputs(char* buf, uint8_t* len);
 
 void check_buttons(void);
 

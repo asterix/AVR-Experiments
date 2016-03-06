@@ -23,7 +23,7 @@ Hardware:  ATMega32U4
 #include "dc_motor.h"
 
 /* Speed controller */
-void (*speed_control)(uint8_t);
+void (*speed_control)(uint8_t) = NULL;
 
 
 /* Basic struct init */
@@ -90,6 +90,9 @@ void dc_motor_set_direction(volatile dc_motor_typ *m, motor_dir_typ dir)
 /* Speed control - PWM dc based */
 void dc_motor_set_speed(uint8_t dc)
 {
+   if(speed_control == NULL) 
+      throw_error(ERR_RUNTIME);
+   
    speed_control(dc);
 }
 
