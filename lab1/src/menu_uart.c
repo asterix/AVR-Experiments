@@ -164,44 +164,44 @@ void exp_update_exp_db()
       /* Get time from reliable reference - T0 */
       uint16_t dt = TIMER_8BIT * shared_data.t0_overflows + TCNT0;
       dt *= (2*shared_data.per_grn_led);
-         
+
       exp_time_tick(dt);
-      
+
       /* Red LED task */
       int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
       if(missed > 0)
       {
          exp_db.task[TSK_REDLED].missed_deadlines = missed;
       }
-   
+
       /* Timekeeper task */
       missed = dt - exp_db.task[TSK_TKEEPER].times_run;
       if(missed > 0)
       {
          exp_db.task[TSK_TKEEPER].missed_deadlines = missed;
       }
-   
+
       /* Green LED counting task */
       missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
       if(missed > 0)
       {
          exp_db.task[TSK_GRNCNT].missed_deadlines = missed;
       }
-   
+
       /* Hough transform task */
       missed = dt/shared_data.mod_h_trnsf - exp_db.task[TSK_HTRNSF].times_run;
       if(missed > 0)
       {
          exp_db.task[TSK_HTRNSF].missed_deadlines = missed;
       }
-   
+
       /* Yellow LED task */
       missed = dt/shared_data.mod_yelo_led - exp_db.task[TSK_YELOLED].times_run;
       if(missed > 0)
       {
          exp_db.task[TSK_YELOLED].missed_deadlines = missed;
       }
-   
+
       /* Green LED task */
       exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
    }
@@ -214,17 +214,17 @@ void menu_uart_prompt()
    uint8_t count = 0;
    /* Clear buffers */
    usart_reset_buffers();
-   
+
    /* Start comms */
    usart_manage_trx(U_ENABLE, USART_TRX);
-   
+
    /* Register callback handler */
    uint8_t cb_id = usart_register_cb(handle_user_inputs);
 
    /* Read & print menu prompt from flash */
    int msg_len = strlen_P(menu_options);
    char out[2]; out[1] = '\0';
-   
+
    for(int i = 0; i < msg_len; i++)
    {
       out[0] = pgm_read_byte_near(menu_options + i);
@@ -365,7 +365,7 @@ void exp_configure_system(uint8_t exp)
 {
    /* Reset all data */
    exp_db_reset();
-   
+
    exp_db.exp = exp;
    exp_db.time_to_run = 15000;
 

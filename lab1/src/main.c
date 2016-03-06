@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------------
-  
+
 Copyright (c) 2016, Vaibhav Desai
 
 Permission to use, copy, modify, and/or distribute this software for any
@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -----------------------------------------------------------------------------
 Function:  Pseudo task scheduling experiment runner
 Created:   17-Feb-2016
-Hardware:  ATMega32U4 
+Hardware:  ATMega32U4
 
 Note: LFUSE = 0xFF, HFUSE = 0xD0
       XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
@@ -37,7 +37,7 @@ volatile char res;
 
 /* Main */
 int main()
-{ 
+{
    uint64_t curr_time;
 
    /* Init generic */
@@ -48,7 +48,7 @@ int main()
 
    /* Init application specific */
    initialize_local();
-   
+
    /* Enable interrupts */
    sei();
    menu_prompt();
@@ -62,18 +62,18 @@ int main()
       if(curr_time - nxt_toggle_red >= shared_data.mod_red_led)
       {
          task_1_toggle_red_led();
-         
+
          /* Exp? */
          exp_task_run(TSK_REDLED);
          nxt_toggle_red = curr_time;
       }
-      else 
+      else
       {
          /* Jitter LED task */
          if(run_jitter > 0)
          {
             task_5_jitter_led();
-            
+
             /* Exp? */
             exp_task_run(TSK_JITTER);
             run_jitter--;
@@ -83,7 +83,7 @@ int main()
          if(run_htransform > 0)
          {
             res = hough_transform((uint16_t)&red, (uint16_t)&green, (uint16_t)&blue);
-         
+
             /* Exp? */
             exp_task_run(TSK_HTRNSF);
             run_htransform--;
@@ -97,7 +97,7 @@ int main()
          res++;
       }
    }
-   
+
    return 0;
 }
 
@@ -139,10 +139,10 @@ void startup_appl()
 void reset_system_vars()
 {
    reset_system_data_default();
-   
+
    run_htransform = 0;
    nxt_toggle_red = 0;
-   
+
    /* Setup Button A */
    button_a.name = 'A';
    button_a.port = (uint8_t*)(&PINB);
@@ -164,7 +164,7 @@ void reset_system_data_default()
    shared_data.per_grn_led = 100;
 
    shared_data.t0_overflows = 0;
-   
+
    shared_data.lag_grn_tsk = 0;
    shared_data.lag_yel_tsk = 0;
    shared_data.sei_yel_needed = false;
@@ -241,7 +241,7 @@ void initialize_local()
    if(!result)
    {
       throw_error(ERR_CONFIG);
-   }   
+   }
 }
 
 
@@ -249,7 +249,7 @@ void initialize_local()
 void leds_turn_on()
 {
    PORTB |= ((1 << EXT_RED)|(1 << EXT_GREEN));
-   PORTD |= (1 << EXT_YELLOW); 
+   PORTD |= (1 << EXT_YELLOW);
    PORTC |= (1 << LED_YELLOW);
    PORTD &= ~(1 << LED_GREEN);
 }
@@ -289,7 +289,7 @@ ISR(TIMER3_COMPA_vect)
 {
    /* Yellow LED task keeper */
    yellow_counter++;
-   
+
    /* Yellow LED task */
    if(yellow_counter % (shared_data.mod_yelo_led/TIME_40HZ) == 0)
    {
@@ -297,7 +297,7 @@ ISR(TIMER3_COMPA_vect)
       {
          sei();
       }
-      
+
       /* Exp? */
       exp_task_run(TSK_YELOLED);
       PORTD ^= (1 << EXT_YELLOW);
@@ -346,7 +346,7 @@ ISR(PCINT0_vect)
       button_a_now = HIGH;
    }
    else
-   {  
+   {
       button_a_now = LOW;
    }
 
@@ -354,7 +354,7 @@ ISR(PCINT0_vect)
    if(button_a.stat == HIGH && button_a_now == LOW)
    {
       _delay_ms(DEBOUNCE_DELAY);
-      
+
       /* Sample again */
       if(!(*button_a.port & button_a.mask))
       {
@@ -384,11 +384,11 @@ void menu_prompt()
 
    /* Exp? */
    exp_task_run(TSK_COMM);
-   
+
    /* Throw experimentation prompt */
    sei();
    menu_uart_prompt();
-   
+
    /* Resume system */
    timer_0_setup_ext_counter(TCNT0);
    timer_0_interrupt_enable('O');

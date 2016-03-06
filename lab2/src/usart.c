@@ -24,11 +24,11 @@ Hardware:  ATMega32U4
 #include <stdlib.h>
 
 /* USART buffers */
-static ubuffer_t rx_buf;
-static ubuffer_t tx_buf;
+static ubuffer_typ rx_buf;
+static ubuffer_typ tx_buf;
 
 /* USART rx/tx callbacks */
-static volatile callback_db_t usart_cbdb;
+static volatile callback_db_typ usart_rx_cbdb;
 
 /* Reset rx/tx buffers, cb db */
 void usart_reset()
@@ -36,10 +36,10 @@ void usart_reset()
    tx_buf.len = tx_buf.idx = 0;
    rx_buf.len = rx_buf.idx = 0;
 
-   usart_cbdb.num = 0;
+   usart_rx_cbdb.num = 0;
    for(int i = 0; i < MAX_CBS; i++)
    {
-      usart_cbdb.fptr[i] = NULL;
+      usart_rx_cbdb.fptr[i] = NULL;
    }
 }
 
@@ -58,21 +58,21 @@ void usart_start_send()
 }
 
 /* Callback registration */
-uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
+uint8_t usart_register_rx_cb(void (*cb)(char* data, uint8_t* len))
 {
    int i = 0;
 
-   if(usart_cbdb.num >= MAX_CBS)
+   if(usart_rx_cbdb.num >= MAX_CBS)
    {
       throw_error(ERR_RUNTIME);
    }
 
    for(i = 0; i < MAX_CBS; i++)
    {
-      if(usart_cbdb.fptr[i] == NULL)
+      if(usart_rx_cbdb.fptr[i] == NULL)
       {
-         usart_cbdb.fptr[i] = cb;
-         usart_cbdb.num++;
+         usart_rx_cbdb.fptr[i] = cb;
+         usart_rx_cbdb.num++;
          break;
       }
    }
@@ -80,14 +80,14 @@ uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len))
 }
 
 /* Remove a registered callback */
-void usart_deregister_cb(uint8_t cbnum)
+void usart_deregister_rx_cb(uint8_t cbnum)
 {
-   usart_cbdb.fptr[cbnum] = NULL;
-   usart_cbdb.num--;
+   usart_rx_cbdb.fptr[cbnum] = NULL;
+   usart_rx_cbdb.num--;
 }
 
 /* Configure USART module */
-bool usart_setup_configure(usart_mode_t mode)
+bool usart_setup_configure(usart_mode_typ mode)
 {
    bool result = true;
    usart_reset();
@@ -150,7 +150,7 @@ bool usart_setup_configure(usart_mode_t mode)
 }
 
 /* Enable rx/tx */
-bool usart_manage_trx(usart_stat_t st, usart_op_t op)
+bool usart_manage_trx(usart_stat_typ st, usart_op_typ op)
 {
    bool result = true;
    switch(st)
@@ -244,13 +244,13 @@ ISR(USART1_RX_vect)
       rx_buf.data[rx_buf.len] = '\0';
       
       /* Invoke all registered callbacks */
-      if(usart_cbdb.num > 0)
+      if(usart_rx_cbdb.num > 0)
       {
          for(int i = 0; i < MAX_CBS; i++)
          {
-            if(usart_cbdb.fptr[i] != NULL)
+            if(usart_rx_cbdb.fptr[i] != NULL)
             {
-               usart_cbdb.fptr[i](rx_buf.data, &rx_buf.len);
+               usart_rx_cbdb.fptr[i](rx_buf.data, &rx_buf.len);
             }
          }
       }

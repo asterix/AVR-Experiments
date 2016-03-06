@@ -437,7 +437,7 @@ void reset_system_data_default()
    shared_data.t0_overflows = 0;
      5fc:	10 92 51 03 	sts	0x0351, r1
      600:	10 92 50 03 	sts	0x0350, r1
-   
+
    shared_data.lag_grn_tsk = 0;
      604:	10 92 5a 03 	sts	0x035A, r1
      608:	10 92 5b 03 	sts	0x035B, r1
@@ -467,7 +467,7 @@ void reset_system_vars()
    reset_system_data_default();
      634:	be df       	rcall	.-132    	; 0x5b2 <reset_system_data_default>
      636:	10 92 47 03 	sts	0x0347, r1
-   
+
    run_htransform = 0;
      63a:	10 92 46 03 	sts	0x0346, r1
      63e:	10 92 3b 03 	sts	0x033B, r1
@@ -480,7 +480,7 @@ void reset_system_vars()
      656:	10 92 41 03 	sts	0x0341, r1
      65a:	10 92 42 03 	sts	0x0342, r1
      65e:	81 e4       	ldi	r24, 0x41	; 65
-   
+
    /* Setup Button A */
    button_a.name = 'A';
      660:	80 93 32 03 	sts	0x0332, r24
@@ -630,7 +630,7 @@ void leds_turn_on()
      704:	85 b1       	in	r24, 0x05	; 5
      706:	80 65       	ori	r24, 0x50	; 80
      708:	85 b9       	out	0x05, r24	; 5
-   PORTD |= (1 << EXT_YELLOW); 
+   PORTD |= (1 << EXT_YELLOW);
      70a:	5e 9a       	sbi	0x0b, 6	; 11
    PORTC |= (1 << LED_YELLOW);
      70c:	47 9a       	sbi	0x08, 7	; 8
@@ -809,7 +809,7 @@ ISR(TIMER3_COMPA_vect)
      806:	80 91 38 03 	lds	r24, 0x0338
      80a:	8f 5f       	subi	r24, 0xFF	; 255
      80c:	80 93 38 03 	sts	0x0338, r24
-   
+
    /* Yellow LED task */
    if(yellow_counter % (shared_data.mod_yelo_led/TIME_40HZ) == 0)
      810:	20 91 38 03 	lds	r18, 0x0338
@@ -837,7 +837,7 @@ ISR(TIMER3_COMPA_vect)
      83e:	b1 f5       	brne	.+108    	; 0x8ac <__vector_32+0xc8>
      840:	22 c0       	rjmp	.+68     	; 0x886 <__vector_32+0xa2>
    yellow_counter++;
-   
+
    /* Yellow LED task */
    if(yellow_counter % (shared_data.mod_yelo_led/TIME_40HZ) == 0)
    {
@@ -849,7 +849,7 @@ ISR(TIMER3_COMPA_vect)
          sei();
      84a:	78 94       	sei
       }
-      
+
       /* Exp? */
       exp_task_run(TSK_YELOLED);
      84c:	83 e0       	ldi	r24, 0x03	; 3
@@ -1081,14 +1081,14 @@ void menu_prompt()
      a0c:	86 b5       	in	r24, 0x26	; 38
      a0e:	c0 d0       	rcall	.+384    	; 0xb90 <timer_0_setup_ext_counter>
      a10:	8f e4       	ldi	r24, 0x4F	; 79
-   
+
    /* Throw experimentation prompt */
    sei();
      a12:	ff d1       	rcall	.+1022   	; 0xe12 <timer_0_interrupt_enable>
    menu_uart_prompt();
      a14:	82 e4       	ldi	r24, 0x42	; 66
      a16:	51 d3       	rcall	.+1698   	; 0x10ba <timer_1_interrupt_enable>
-   
+
    /* Resume system */
    timer_0_setup_ext_counter(TCNT0);
      a18:	81 e4       	ldi	r24, 0x41	; 65
@@ -1137,7 +1137,7 @@ ISR(PCINT0_vect)
      a5a:	11 f4       	brne	.+4      	; 0xa60 <__vector_9+0x3c>
      a5c:	80 e0       	ldi	r24, 0x00	; 0
      a5e:	90 e0       	ldi	r25, 0x00	; 0
-   {  
+   {
       button_a_now = LOW;
    }
 
@@ -1161,7 +1161,7 @@ ISR(PCINT0_vect)
      a82:	00 00       	nop
    {
       _delay_ms(DEBOUNCE_DELAY);
-      
+
       /* Sample again */
       if(!(*button_a.port & button_a.mask))
      a84:	e0 91 33 03 	lds	r30, 0x0333
@@ -3981,7 +3981,7 @@ bool usart_manage_trx(usart_stat_t st, usart_op_t op)
    bool result = true;
     19a2:	81 e0       	ldi	r24, 0x01	; 1
     19a4:	08 95       	ret
-         
+
          break;
       }
       default:
@@ -4624,12 +4624,12 @@ void exp_update_exp_db()
     1cf8:	38 9f       	mul	r19, r24
     1cfa:	d0 0d       	add	r29, r0
     1cfc:	11 24       	eor	r1, r1
-         
+
       exp_time_tick(dt);
     1cfe:	ce 01       	movw	r24, r28
     1d00:	cf df       	rcall	.-98     	; 0x1ca0 <exp_time_tick>
     1d02:	60 91 52 03 	lds	r22, 0x0352
-      
+
       /* Red LED task */
       int missed = dt/shared_data.mod_red_led - exp_db.task[TSK_REDLED].times_run;
     1d06:	70 91 53 03 	lds	r23, 0x0353
@@ -4649,7 +4649,7 @@ void exp_update_exp_db()
     1d24:	60 93 14 03 	sts	0x0314, r22
     1d28:	80 91 0c 03 	lds	r24, 0x030C
       }
-   
+
       /* Timekeeper task */
       missed = dt - exp_db.task[TSK_TKEEPER].times_run;
     1d2c:	90 91 0d 03 	lds	r25, 0x030D
@@ -4667,7 +4667,7 @@ void exp_update_exp_db()
     1d42:	20 93 0a 03 	sts	0x030A, r18
     1d46:	60 91 58 03 	lds	r22, 0x0358
       }
-   
+
       /* Green LED counting task */
       missed = dt/shared_data.per_grn_led - exp_db.task[TSK_GRNCNT].times_run;
     1d4a:	70 91 59 03 	lds	r23, 0x0359
@@ -4688,7 +4688,7 @@ void exp_update_exp_db()
     1d6c:	60 91 54 03 	lds	r22, 0x0354
     1d70:	70 91 55 03 	lds	r23, 0x0355
       }
-   
+
       /* Hough transform task */
       missed = dt/shared_data.mod_h_trnsf - exp_db.task[TSK_HTRNSF].times_run;
     1d74:	20 91 2f 03 	lds	r18, 0x032F
@@ -4708,7 +4708,7 @@ void exp_update_exp_db()
     1d92:	60 91 56 03 	lds	r22, 0x0356
     1d96:	70 91 57 03 	lds	r23, 0x0357
       }
-   
+
       /* Yellow LED task */
       missed = dt/shared_data.mod_yelo_led - exp_db.task[TSK_YELOLED].times_run;
     1d9a:	20 91 1b 03 	lds	r18, 0x031B
@@ -4729,7 +4729,7 @@ void exp_update_exp_db()
     1dbc:	70 91 59 03 	lds	r23, 0x0359
     1dc0:	ce 01       	movw	r24, r28
       }
-   
+
       /* Green LED task */
       exp_db.task[TSK_GRNLED].times_run = dt/shared_data.per_grn_led;
     1dc2:	7c d5       	rcall	.+2808   	; 0x28bc <__udivmodhi4>
@@ -4950,7 +4950,7 @@ void menu_uart_prompt()
    usart_reset_buffers();
     1efe:	62 e0       	ldi	r22, 0x02	; 2
     1f00:	70 e0       	ldi	r23, 0x00	; 0
-   
+
    /* Start comms */
    usart_manage_trx(U_ENABLE, USART_TRX);
     1f02:	80 e0       	ldi	r24, 0x00	; 0
@@ -4959,7 +4959,7 @@ void menu_uart_prompt()
     1f08:	84 e4       	ldi	r24, 0x44	; 68
     1f0a:	90 e1       	ldi	r25, 0x10	; 16
     1f0c:	d9 dc       	rcall	.-1614   	; 0x18c0 <usart_register_cb>
-   
+
    /* Register callback handler */
    uint8_t cb_id = usart_register_cb(handle_user_inputs);
     1f0e:	f8 2e       	mov	r15, r24
@@ -4974,7 +4974,7 @@ void menu_uart_prompt()
     1f18:	84 91       	lpm	r24, Z
     1f1a:	89 83       	std	Y+1, r24	; 0x01
     1f1c:	ce 01       	movw	r24, r28
-   
+
    for(int i = 0; i < msg_len; i++)
    {
       out[0] = pgm_read_byte_near(menu_options + i);
@@ -4992,7 +4992,7 @@ void menu_uart_prompt()
    /* Read & print menu prompt from flash */
    int msg_len = strlen_P(menu_options);
    char out[2]; out[1] = '\0';
-   
+
    for(int i = 0; i < msg_len; i++)
     1f30:	0c e3       	ldi	r16, 0x3C	; 60
     1f32:	80 91 31 03 	lds	r24, 0x0331
@@ -5061,7 +5061,7 @@ void exp_configure_system(uint8_t exp)
     1f7a:	2c de       	rcall	.-936    	; 0x1bd4 <exp_db_reset>
     1f7c:	89 81       	ldd	r24, Y+1	; 0x01
     1f7e:	80 93 03 03 	sts	0x0303, r24
-   
+
    exp_db.exp = exp;
     1f82:	28 e9       	ldi	r18, 0x98	; 152
     1f84:	3a e3       	ldi	r19, 0x3A	; 58
@@ -6159,7 +6159,7 @@ volatile char res;
 
 /* Main */
 int main()
-{ 
+{
     2708:	a8 e0       	ldi	r26, 0x08	; 8
     270a:	b0 e0       	ldi	r27, 0x00	; 0
     270c:	e9 e8       	ldi	r30, 0x89	; 137
@@ -6179,7 +6179,7 @@ int main()
    /* Init application specific */
    initialize_local();
     271e:	78 94       	sei
-   
+
    /* Enable interrupts */
    sei();
     2720:	0e 94 f4 04 	call	0x9e8	; 0x9e8 <menu_prompt>
@@ -6243,7 +6243,7 @@ int main()
          task_1_toggle_red_led();
     27a8:	90 e0       	ldi	r25, 0x00	; 0
     27aa:	56 da       	rcall	.-2900   	; 0x1c58 <exp_task_run>
-         
+
          /* Exp? */
          exp_task_run(TSK_REDLED);
     27ac:	40 92 3b 03 	sts	0x033B, r4
@@ -6259,7 +6259,7 @@ int main()
     27ce:	80 91 43 03 	lds	r24, 0x0343
     27d2:	90 91 44 03 	lds	r25, 0x0344
       }
-      else 
+      else
       {
          /* Jitter LED task */
          if(run_jitter > 0)
@@ -6272,7 +6272,7 @@ int main()
             task_5_jitter_led();
     27e2:	3a da       	rcall	.-2956   	; 0x1c58 <exp_task_run>
     27e4:	80 91 43 03 	lds	r24, 0x0343
-            
+
             /* Exp? */
             exp_task_run(TSK_JITTER);
     27e8:	90 91 44 03 	lds	r25, 0x0344
@@ -6303,7 +6303,7 @@ int main()
     2818:	1f da       	rcall	.-3010   	; 0x1c58 <exp_task_run>
     281a:	80 91 46 03 	lds	r24, 0x0346
     281e:	90 91 47 03 	lds	r25, 0x0347
-         
+
             /* Exp? */
             exp_task_run(TSK_HTRNSF);
     2822:	01 97       	sbiw	r24, 0x01	; 1

@@ -37,30 +37,30 @@ typedef enum
    USART_NORMAL_ASYNC = 0,
    USART_DOUBLE_ASYNC,
    USART_MASTER_SYNC
-} usart_mode_t;
+} usart_mode_typ;
 
 typedef enum
 {
    USART_TX = 0,
    USART_RX,
    USART_TRX
-} usart_op_t;
+} usart_op_typ;
 
 typedef struct
 {
    char data[USART_BUFFER_SIZE];
    uint8_t len;
    uint8_t idx;
-} ubuffer_t;
+} ubuffer_typ;
 
 typedef enum
 {
    U_ENABLE = 0,
    U_DISABLE
-} usart_stat_t;
+} usart_stat_typ;
 
 
-bool usart_setup_configure(usart_mode_t mode);
+bool usart_setup_configure(usart_mode_typ mode);
 
 void usart_reset(void);
 
@@ -68,7 +68,7 @@ void usart_reset_buffers(void);
 
 void usart_start_send(void);
 
-bool usart_manage_trx(usart_stat_t st, usart_op_t op);
+bool usart_manage_trx(usart_stat_typ st, usart_op_typ op);
 
 void usart_loopback(void);
 
@@ -78,8 +78,8 @@ bool usart_1_enable_interrupts(void);
 
 bool usart_1_disable_interrupts(void);
 
-uint8_t usart_register_cb(void (*cb)(char* data, uint8_t* len));
+uint8_t usart_register_rx_cb(void (*cb)(char* data, uint8_t* len));
 
-void usart_deregister_cb(uint8_t cbnum);
+void usart_deregister_rx_cb(uint8_t cbnum);
 
 #endif /* _UART_MENU_H_ */

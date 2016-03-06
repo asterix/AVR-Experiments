@@ -15,52 +15,35 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  Pseudo task scheduling experiment runner
-Created:   17-Feb-2016
+Function:  UART based text menu user interface
+Created:   02-Mar-2016
 Hardware:  ATMega32U4 
-
-Note: LFUSE = 0xFF, HFUSE = 0xD0
-      XTAL = 16MHz (CKDIV8 = 1 => SYSCLK = 16MHz)
-
 ---------------------------------------------------------------------------*/
 
+#ifndef _MENU_UART_H_
+#define _MENU_UART_H_
+
 #include <stdio.h>
-#include <stdlib.h>
-#include "globals.h"
+#include <string.h>
+#include <avr/pgmspace.h>
 #include "usart.h"
-#include "menu_uart.h"
-#include "hough_gray.h"
-#include "image.h"
 
 
-#define EXT_RED    PORTB4
-#define EXT_YELLOW PORTD6
-#define EXT_GREEN  PORTB6
-#define TIME_40HZ  25
+#define NUM_TASKS 2
+
+#define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
 
-#define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
-                           { __asm__ __volatile("nop":::);}
+typedef enum
+{
+   TSK_FWD = 0,
+   TSK_REV
+} task_name_typ;
 
-extern shared_data_t shared_data;
 
-/* Tasks */
-void task_1_toggle_red_led(void);
 
-void task_5_jitter_led();
+void menu_uart_prompt();
 
-/* Helpers */
-void initialize_local(void);
+void handle_user_inputs(char* buf, uint8_t* len);
 
-void startup_appl(void);
-
-void leds_turn_on(void);
-
-void leds_turn_off(void);
-
-void reset_system_vars(void);
-
-void reset_system_data_default(void);
-
-void menu_prompt();
-
+#endif /* _MENU_UART_H_ */

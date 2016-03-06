@@ -30,7 +30,7 @@ SRCS    = main.c \
           globals.c \
           usart.c \
           menu_uart.c \
-          hough_gray.c
+          dc_motor.c
 
 OBJS    = $(addprefix $(OBJ)/,$(subst .c,.o,$(SRCS)))
 

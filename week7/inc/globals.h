@@ -26,22 +26,24 @@ Hardware:  ATMega32U4
 #define F_CPU 16000000
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-#define BUTTON_A PB3 // PCINT3
-#define BUTTON_B PD5
-#define BUTTON_C PB0 // PCINT0
 
+
+#define BUTTON_A   PB3 /* PCINT3 */
+#define BUTTON_B   PD5
+#define BUTTON_C   PB0 /* PCINT0 */
 #define LED_YELLOW PORTC7
 #define LED_GREEN  PORTD5
 #define LED_RED    PORTB0
 
-#define NUM_16BIT_MAX   65535
-#define DEBOUNCE_DELAY  20    /* Jitter time (ms) */
+#define MAX_16BIT   65535
+#define DBNCE_DELAY 10    /* Jitter time (ms) */
 
-#define MAX_CBS   3
+#define MAX_CBS     3
 
 
 /* HIGH and LOW for buttons */
@@ -49,16 +51,18 @@ typedef enum
 {
    LOW = 0,
    HIGH
-} button_stat_t;
+} level_typ;
 
-typedef void (*uart_cb_t)(char*, uint8_t*);
+typedef level_typ button_stat_typ;
+
+typedef void (*uart_cb_typ)(char*, uint8_t*);
 
 /* Callback storage */
 typedef struct
 {
-   uart_cb_t fptr[MAX_CBS];
+   uart_cb_typ fptr[MAX_CBS];
    uint8_t num;
-} callback_db_t;
+} callback_db_typ;
 
 
 /* Error codes */
@@ -68,7 +72,8 @@ typedef enum ec
    ERR_PERIPH,
    ERR_RUNTIME,
    ERR_GENERC
-} error_code_t;
+} error_code_typ;
+
 
 /* Button management */
 typedef struct
@@ -76,9 +81,18 @@ typedef struct
    char name;
    volatile uint8_t *port;
    uint8_t mask;
-   button_stat_t stat;
-} button_t;
+   button_stat_typ stat;
+} button_typ;
 
+
+typedef struct button_list
+{
+   button_typ button;
+   struct button_list *next;
+} button_list_typ;
+
+
+/* Timers */
 typedef enum
 {
    PRESC_1 = 1,
@@ -87,14 +101,14 @@ typedef enum
    PRESC_256 = 256,
    PRESC_1024 = 1024,
    PRESC_INVL = 0
-} timer_presc_t;
+} timer_presc_typ;
 
 typedef enum
 {
    TIMER_8BIT  = 256,
    TIMER_10BIT = 1024,
    TIMER_16BIT = 65536
-} timer_type_t;
+} timer_type_typ;
 
 
 /* Prototypes*/
@@ -103,7 +117,9 @@ void pll_configure_tclk_source_freq(void);
 
 void initialize_basic(void);
 
-void throw_error(error_code_t ec);
+void throw_error(error_code_typ ec);
+
+void setup_buttons(void);
 
 void startup_pattern_show(void);
 
@@ -112,7 +128,7 @@ void clear_all_leds(void);
 void setup_interrupts(void);
 
 /* Timers - Max delay possible = 4194.25ms */
-timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ);
+timer_presc_typ timer_compute_prescaler(double xd_ms, uint16_t *tcnt, timer_type_typ typ);
 
 /* Timer 0 */
 bool timer_0_setup_autoreload(uint16_t delay);
@@ -129,6 +145,8 @@ void timer_0_stop(void);
 bool timer_1_setup_autoreload(uint16_t delay);
 
 bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc);
+
+void timer_1_setdc_pfc_pwm(uint8_t dutycyc);
 
 void timer_1_interrupt_enable(char module);
 

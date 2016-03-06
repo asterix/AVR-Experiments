@@ -22,6 +22,12 @@ Hardware:  ATMega32U4
 
 #include "globals.h"
 
+/*-----------------------------------------------------------
+                COMMON GLOBAL VARIABLES
+-----------------------------------------------------------*/
+button_list_typ *buttons;
+
+
 
 /*-----------------------------------------------------------
                     INITIALIZATION
@@ -48,6 +54,7 @@ void pll_configure_tclk_source_freq()
    PLLCSR |=  (1 << PLLE);
 }
 
+
 void initialize_basic()
 {
    /* Start up allowance */
@@ -57,15 +64,43 @@ void initialize_basic()
    DDRC |= (1 << LED_YELLOW);
    DDRD |= (1 << LED_GREEN);
 
+   setup_buttons();
+
+   /* Show a startup pattern */
+   startup_pattern_show();
+}
+
+
+void setup_buttons()
+{
+   button_list_typ *b;
+
    /* Configure Button pins to input */
    DDRB &= ~((1 << BUTTON_A) | (1 << BUTTON_C));
 
    /* Enable pull-ups on input pins */
    PORTB |= ((1 << BUTTON_A) | (1 << BUTTON_C));
 
-   /* Show a startup pattern */
-   startup_pattern_show();
+   /* Setup Button A */
+   buttons = malloc(sizeof(button_list_typ));
+   b = buttons;
+
+   b->button.name = 'A';
+   b->button.port = (uint8_t*)(&PINB);
+   b->button.mask = (1 << BUTTON_A);
+   b->button.stat = HIGH;
+
+   /* Setup Button C */
+   b->next = malloc(sizeof(button_list_typ));
+   b = b->next;
+
+   b->button.name = 'C';
+   b->button.port = (uint8_t*)(&PINB);
+   b->button.mask = (1 << BUTTON_C);
+   b->button.stat = HIGH;
+   b->next = NULL;
 }
+
 
 void startup_pattern_show()
 {
@@ -95,9 +130,9 @@ void startup_pattern_show()
                 PERIPHERAL CONFIGURATION
 -----------------------------------------------------------*/
 
-timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type_t typ)
+timer_presc_typ timer_compute_prescaler(double xd_ms, uint16_t *tcnt, timer_type_typ typ)
 {
-   timer_presc_t presc = PRESC_INVL;
+   timer_presc_typ presc = PRESC_INVL;
    double xd_in = (double)1000/xd_ms;
    uint64_t xd = (uint64_t)(F_CPU/xd_in);
 
@@ -134,12 +169,13 @@ timer_presc_t timer_compute_prescaler(uint16_t xd_ms, uint16_t *tcnt, timer_type
    return presc;
 }
 
+
 /* Timer 0 setup */
 bool timer_0_setup_autoreload(uint16_t delay)
 {
    uint16_t tcnt;
    /* Compute the load count */
-   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_8BIT);
+   timer_presc_typ presc = timer_compute_prescaler((double)delay, &tcnt, TIMER_8BIT);
    
    if(presc != PRESC_INVL)
    {
@@ -229,6 +265,7 @@ bool timer_0_setup_ext_counter(uint8_t tstart)
    return true;
 }
 
+
 void timer_0_interrupt_enable(char module)
 {
    switch(module)
@@ -246,6 +283,7 @@ void timer_0_interrupt_enable(char module)
          throw_error(ERR_CONFIG);
    }
 }
+
 
 void timer_0_interrupt_disable(char module)
 {
@@ -271,7 +309,7 @@ bool timer_1_setup_autoreload(uint16_t delay)
 {
    uint16_t tcnt;
    /* Compute the load count */
-   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_16BIT);
+   timer_presc_typ presc = timer_compute_prescaler((double)delay, &tcnt, TIMER_16BIT);
    
    if(presc != PRESC_INVL)
    {
@@ -323,6 +361,7 @@ bool timer_1_setup_autoreload(uint16_t delay)
    return true;
 }
 
+
 /* Timer 1 - PWM Phase and Frequency correct */
 bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
 {
@@ -333,7 +372,7 @@ bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
    uint16_t top;
 
    /* Compute prescaler */
-   timer_presc_t presc = timer_compute_prescaler(t_ms, &top, TIMER_16BIT);
+   timer_presc_typ presc = timer_compute_prescaler(t_ms, &top, TIMER_16BIT);
 
    if(presc != PRESC_INVL)
    {
@@ -401,6 +440,20 @@ bool timer_1_setup_pfc_pwm(double freq, uint8_t dutycyc)
 }
 
 
+void timer_1_setdc_pfc_pwm(uint8_t dutycyc)
+{
+   /* Set duty cycle */
+   if(dutycyc >= 0 && dutycyc <=100)
+   {
+      OCR1B = ICR1 * (double)dutycyc/100;
+   }
+   else
+   {
+      throw_error(ERR_CONFIG);
+   }
+}
+
+
 void timer_1_interrupt_enable(char module)
 {
    switch(module)
@@ -421,6 +474,7 @@ void timer_1_interrupt_enable(char module)
          throw_error(ERR_CONFIG);
    }
 }
+
 
 void timer_1_interrupt_disable(char module)
 {
@@ -449,7 +503,7 @@ bool timer_3_setup_autoreload(uint16_t delay)
 {
    uint16_t tcnt;
    /* Compute the load count */
-   timer_presc_t presc = timer_compute_prescaler(delay, &tcnt, TIMER_16BIT);
+   timer_presc_typ presc = timer_compute_prescaler((double)delay, &tcnt, TIMER_16BIT);
 
    if(presc != PRESC_INVL)
    {
@@ -501,6 +555,7 @@ bool timer_3_setup_autoreload(uint16_t delay)
    return true;
 }
 
+
 void timer_3_interrupt_enable(char module)
 {
    switch(module)
@@ -521,6 +576,7 @@ void timer_3_interrupt_enable(char module)
          throw_error(ERR_CONFIG);
    }
 }
+
 
 void timer_3_interrupt_disable(char module)
 {
@@ -588,6 +644,7 @@ bool timer_4_setup_normal(uint16_t delay)
    else
       return false;
 }
+
 
 /* HS Timer 4 */
 void timer_4_configure_pc_pwm_4b(double freq, uint8_t dutycyc)
@@ -760,6 +817,7 @@ void timer_4_interrupt_enable(char module)
    }
 }
 
+
 void timer_4_interrupt_disable(char module)
 {
    switch(module)
@@ -810,6 +868,7 @@ bool pcintx_enable_interrupt(unsigned char pcintx)
    return result;
 }
 
+
 void pcintx_disable_interrupt(unsigned char pcintx)
 {
    /* Disable PCINT globally */
@@ -832,7 +891,7 @@ void pcintx_disable_interrupt(unsigned char pcintx)
                  ERROR/EXCEPTION HANDLERS
 -----------------------------------------------------------*/
 
-void throw_error(error_code_t ec)
+void throw_error(error_code_typ ec)
 {
    /* Red LED */
    cli();
@@ -862,3 +921,4 @@ void throw_error(error_code_t ec)
    PORTB &= ~(1 << LED_RED);
    while(1);
 }
+
