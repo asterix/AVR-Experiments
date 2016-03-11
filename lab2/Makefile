@@ -58,5 +58,5 @@ assembly: $(TARGET).obj
 
 
 clean:
-	rm -f *.o *.hex *.obj *.hex
+	rm -f *.o *.hex *.obj *.hex *.s
 

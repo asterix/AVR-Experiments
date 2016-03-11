@@ -16,7 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
 Function:  UART based text menu user interface - motor control
-Created:   02-Mar-2016
+Created:   10-Mar-2016
 Hardware:  ATMega32U4 
 ---------------------------------------------------------------------------*/
 
@@ -24,12 +24,19 @@ Hardware:  ATMega32U4
 
 
 /* String look up in flash memory */
-const char task01[] PROGMEM = "Forward\t";
-const char task02[] PROGMEM = "Reverse\t";
-
-const char* const task_names[NUM_TASKS] PROGMEM = {task01};
-
-const char menu_options[] PROGMEM = {" \r\n "};
+const char menu_options[] PROGMEM = {" \r\n \
+------------------------------------------------------------\r\n\
+                   PID CONTROL MENU \r\n\
+------------------------------------------------------------\r\n\
+r/R <num> -> Set reference position to <num> encoder counts\r\n\
+P <num>   -> Increase Kp by <num> amount\r\n\
+p <num>   -> Decrease Kp by <num> amount\r\n\
+D <num>   -> Increase Kd by <num> amount\r\n\
+d <num>   -> Decrease Kd by <num> amount\r\n\
+v/V       -> View the current Kp, Kd, Vm, Pr, Pm and T\r\n\
+t         -> Execute the set trajectory\r\n\
+q         -> Quit menu\r\n\
+------------------------------------------------------------\r\n"};
 
 static bool volatile done = false;
 
@@ -84,7 +91,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
 
    usart_print("\r\nYour choice: ");
    usart_print((const char*)buf);
-   usart_print("   \r\n");
+   usart_print(" \r\n");
 
    /* Match with available options/format */
    nargs = sscanf((const char*)buf, "%c %d", &op, &num);
@@ -93,15 +100,38 @@ void handle_user_inputs(char* buf, uint8_t* len)
    {
       switch(op)
       {
-         case 'f':
+         case 'r':
+         case 'R':
          {
-            usart_print("Queued forward (CW)\r\n");
-            done = true;
             break;
          }
-         case 'r':
+         case 'P':
          {
-            usart_print("Queued reverse (CCW)\r\n");
+            break;
+         }
+         case 'p':
+         {
+            break;
+         }
+         case 'D':
+         {
+            break;
+         }
+         case 'd':
+         {
+            break;
+         }
+         case 'v':
+         case 'V':
+         {
+            break;
+         }
+         case 't':
+         {
+
+         }
+         case 'q':
+         {
             done = true;
             break;
          }
