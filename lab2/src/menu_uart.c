@@ -98,7 +98,7 @@ void menu_uart_prompt()
 /* User input handler - callback */
 void handle_user_inputs(char* buf, uint8_t* len)
 {
-   char op; double num = 0; int nargs = 0;
+   char op; float num = 0; int nargs = 0;
    bool result = true;
 
    /* Stop rx to prevent recursive cbs */
@@ -109,7 +109,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
    usart_print(" \r\n");
 
    /* Match with available options/format */
-   nargs = sscanf((const char*)buf, "%c %g", &op, &num);
+   nargs = sscanf((const char*)buf, "%c %f", &op, &num);
 
    if(nargs >= 1)
    {
@@ -200,32 +200,32 @@ void handle_user_inputs(char* buf, uint8_t* len)
 
 void print_all_pid_params(pid_ctrl_db_typ *db)
 {
-   char prinfbuf[25];
+   char printbuf[25];
 
    /* Kp, Ki, Kd */
    usart_print("Kp \t = ");
-   sscanf(printbuf, %g, db->kp);
+   sprintf(printbuf, "%f", db->kp);
    usart_print(printbuf); usart_print(" \r\n");
 
    usart_print("Ki \t = ");
-   sscanf(printbuf, %g, db->ki);
+   sprintf(printbuf, "%f", db->ki);
    usart_print(printbuf); usart_print(" \r\n");
 
    usart_print("Kd \t = ");
-   sscanf(printbuf, %g, db->kd);
+   sprintf(printbuf, "%f", db->kd);
    usart_print(printbuf); usart_print(" \r\n");
 
    /* Positions and drive */
    usart_print("Pref\t = ");
-   sscanf(printbuf, %g, db->pos_ref);
+   sprintf(printbuf, "%d", db->pos_ref);
    usart_print(printbuf); usart_print(" \r\n");
 
    usart_print("Pm\t = ");
-   sscanf(printbuf, %g, db->pos_now);
+   sprintf(printbuf, "%d", db->pos_now);
    usart_print(printbuf); usart_print(" \r\n");
 
    usart_print("Drv\t = ");
-   sscanf(printbuf, %d, db->pid_drv);
+   sprintf(printbuf, "%d", db->pid_drv);
    usart_print(printbuf); usart_print(" \r\n");
 }
 

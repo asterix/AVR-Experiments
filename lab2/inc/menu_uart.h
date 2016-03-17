@@ -33,7 +33,7 @@ Hardware:  ATMega32U4
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
-extern void set_pid_params_ref(double kp, double ki, double kd, uint32_t ref);
+extern void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref);
 
 typedef enum
 {
@@ -44,11 +44,11 @@ typedef enum
 
 typedef struct
 {
-   double kp;
-   double kd;
-   double ki;
-   uint32_t pos_ref;
-   uint32_t pos_now;
+   float kp;
+   float kd;
+   float ki;
+   uint16_t pos_ref;
+   uint16_t pos_now;
    uint8_t pid_drv;
 } pid_ctrl_db_typ;
 

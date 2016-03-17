@@ -60,7 +60,7 @@ void run_pid(dc_motor_typ *m, pid_ctrl_db_typ *pid);
 
 void check_buttons(void);
 
-void set_pid_params_ref(double kp, double ki, double kd, uint32_t ref);
+void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref);
 
 volatile pid_ctrl_db_typ* get_pid_params_ref();
 

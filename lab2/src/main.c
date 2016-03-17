@@ -94,7 +94,7 @@ void reset_system_vars()
 
 
 /* Set new PID control parameters */
-void set_pid_params_ref(double kp, double ki, double kd, uint32_t ref)
+void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref)
 {
    pid_ctrl.kp = kp;
    pid_ctrl.kd = kd;
