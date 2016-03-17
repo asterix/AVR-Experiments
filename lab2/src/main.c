@@ -16,7 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
 Function:  Motor controller
-Created:   02-Mar-2016
+Created:   16-Mar-2016
 Hardware:  ATMega32U4
 
 Note: LFUSE = 0xFF, HFUSE = 0xD0
@@ -29,7 +29,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 
 /* Globals */
 volatile dc_motor_typ motor2;
-volatile buffer_typ tbuf;
+volatile pid_ctrl_db_typ pid_ctrl;
 
 
 /* Main */
@@ -51,53 +51,17 @@ int main()
    dc_motor_reset(&motor2);
    
    /* Main loop */
-   uint8_t cmd;
    while(1)
    {
-      cmd = dequeue_command(&tbuf);
-      if(cmd != CBUF_INVL)
-      {
-         run_motor(&motor2, (motor_dir_typ)cmd);
-      }
    }
 
    return 0;
 }
 
 
-/* Execute command */
-void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir)
+/* PID controller */
+void run_pid(dc_motor_typ *m, pid_ctrl_db_typ *pid)
 {
-   uint16_t target = m->enc_count;
-   int appr; uint8_t dcyc;
-   
-   switch(dir)
-   {
-      case CW:
-         target = m->enc_count + m->enc_revc;
-         break;
-      case CCW:
-         target = m->enc_count - m->enc_revc;
-         break;
-      default:
-         ;
-   }
-
-   appr = abs((int)(target - m->enc_count));
-   dc_motor_set_direction(m, dir);
-   
-   while(appr > 0)
-   {
-      appr = abs((int)(target - m->enc_count));
-      dcyc = (uint8_t)((float)appr/m->enc_revc*PWM_DC_MAX);
-
-      if(dcyc > PWM_DC_MAX) dcyc = PWM_DC_MAX;
-      if(dcyc < PWM_DC_MIN) dcyc = PWM_DC_MIN;
-
-      dc_motor_set_speed(dcyc);
-   }
-   
-   dc_motor_set_speed(0);
 }
 
 /*-----------------------------------------------------------
@@ -121,54 +85,37 @@ void startup_appl()
 }
 
 
-/* Command buffer maintainance */
-void enqueue_command(volatile buffer_typ *cbuf, uint8_t c)
-{
-   if(cbuf->full <= CBUF_SIZE)
-   {
-      cbuf->data[cbuf->widx] = c;
-      if(++cbuf->widx >= CBUF_SIZE)
-      {
-         cbuf->widx = 0;
-      }
-      cbuf->full++;
-   }
-}
-
-
-uint8_t dequeue_command(volatile buffer_typ *cbuf)
-{
-   uint8_t res = CBUF_INVL;
-   if(cbuf->full > 0)
-   {
-      res = cbuf->data[cbuf->ridx];
-      if(++cbuf->ridx >= CBUF_SIZE)
-      {
-         cbuf->ridx = 0;
-      }
-      cbuf->full--;
-   }
-   return res;
-}
-
-
-void reset_cbuffer(volatile buffer_typ *cbuf)
-{
-   cbuf->full = cbuf->ridx = cbuf->widx = 0;
-}
-
-
 /* System vars re-init */
 void reset_system_vars()
 {
    reset_system_data_default();
-   reset_cbuffer(&tbuf);
+   startup_menu();
+}
+
+
+/* Set new PID control parameters */
+void set_pid_params_ref(double kp, double ki, double kd, uint32_t ref)
+{
+   pid_ctrl.kp = kp;
+   pid_ctrl.kd = kd;
+   pid_ctrl.ki = ki;
+   pid_ctrl.pos_ref = ref;
+}
+
+
+volatile pid_ctrl_db_typ* get_pid_params_ref()
+{
+   return &pid_ctrl;
 }
 
 
 /* Default startup config */
 void reset_system_data_default()
 {
+   /* PID clear */
+   pid_ctrl.kp = pid_ctrl.kd = pid_ctrl.ki = 0;
+   pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
+
    /* Motor init */
    dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
    dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B), &PORTE,
@@ -181,21 +128,39 @@ void initialize_local()
 {
    /* Setup PCINTx interrupts for buttons */
    bool result = pcintx_enable_interrupt(PCINT3);
-   if(result) result = pcintx_enable_interrupt(PCINT0);
+   if(result) 
+   {
+      result = pcintx_enable_interrupt(PCINT0);
+   }
 
    /* Initialize USART for communication */
-   if(result) result = usart_setup_configure(USART_DOUBLE_ASYNC);
+   if(result) 
+   {
+      result = usart_setup_configure(USART_DOUBLE_ASYNC);
+   }
    
-   /* Enable UART interrupts, callback registration */
-   if(result) result = usart_1_enable_interrupts();
-   if(result) usart_register_rx_cb(handle_uart_inputs);
+   /* Enable UART interrupts */
+   if(result) 
+   {
+      result = usart_1_enable_interrupts();
+   }
 
    /* Timer 1 - PWM - Motor */
-   if(result) result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
+   if(result) 
+   {
+      result = timer_1_setup_pfc_pwm(MOTOR2_FREQ, 0);
+   }
 
-   /* Motor encoder */
-   if(result) result = pcintx_enable_interrupt(PCINT4);
-   if(result) result = pcintx_enable_interrupt(PCINT5);
+   /* Motor encoders */
+   if(result) 
+   {
+      result = pcintx_enable_interrupt(PCINT4);
+   }
+
+   if(result) 
+   {
+      result = pcintx_enable_interrupt(PCINT5);
+   }
 
    if(!result)
    {
@@ -224,39 +189,10 @@ void leds_turn_off()
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
 {
-   check_buttons();
+   //check_buttons();
    dc_motor_check_encoders(&motor2);
 }
 
-
-/* UART callback */
-void handle_uart_inputs(char* buf, uint8_t* len)
-{
-   char op; int nargs = 0;
-
-   /* Match with available options/format */
-   nargs = sscanf((const char*)buf, "%c", &op);
-
-   if(nargs >= 1)
-   {
-      switch(op)
-      {
-         case 'f':
-            enqueue_command(&tbuf, CW);
-            break;
-         case 'r':
-            enqueue_command(&tbuf, CCW);
-            break;
-         default:
-            ;
-      }
-   }
-
-   usart_print("\r\n");
-
-   /* Clear buffers */
-   usart_reset_buffers();
-}
 
 
 /* Check all button presses */
@@ -290,12 +226,10 @@ void check_buttons()
              switch(btn->name)
              {
                 case 'A':
-                   /* Forward */
-                   enqueue_command(&tbuf, CW);
+                   /* No action */
                    break;
                 case 'C':
-                   /* Reverse */
-                   enqueue_command(&tbuf, CCW);
+                   /* No action */
                    break;
                 default:
                    break;

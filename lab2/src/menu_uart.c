@@ -39,6 +39,21 @@ q         -> Quit menu\r\n\
 ------------------------------------------------------------\r\n"};
 
 static bool volatile done = false;
+static pid_ctrl_db_typ pid_setting;
+
+
+
+/* Initialize */
+void startup_menu()
+{
+   init_ctrl_db_settings(&pid_setting);
+}
+
+void init_ctrl_db_settings(pid_ctrl_db_typ *db)
+{
+   db->kp = db->kd = db->ki = 0;
+   db->pos_ref = db->pos_now = db->pid_drv = 0;
+}
 
 
 /* Menu mode */
@@ -83,7 +98,7 @@ void menu_uart_prompt()
 /* User input handler - callback */
 void handle_user_inputs(char* buf, uint8_t* len)
 {
-   char op; int num; int nargs = 0;
+   char op; double num = 0; int nargs = 0;
    bool result = true;
 
    /* Stop rx to prevent recursive cbs */
@@ -94,7 +109,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
    usart_print(" \r\n");
 
    /* Match with available options/format */
-   nargs = sscanf((const char*)buf, "%c %d", &op, &num);
+   nargs = sscanf((const char*)buf, "%c %g", &op, &num);
 
    if(nargs >= 1)
    {
@@ -103,35 +118,55 @@ void handle_user_inputs(char* buf, uint8_t* len)
          case 'r':
          case 'R':
          {
+            if(nargs == 2)
+            {
+               pid_setting.pos_ref += (int)num;
+            }
+            else
+            {
+               result = false;
+            }
             break;
          }
          case 'P':
          {
+            usart_print("Kp increased\r\n");
+            pid_setting.kp += num;
             break;
          }
          case 'p':
          {
+            usart_print("Kp decreased\r\n");
+            pid_setting.kp -= num;
             break;
          }
          case 'D':
          {
+            usart_print("Kd increased\r\n");
+            pid_setting.kd += num;
             break;
          }
          case 'd':
          {
+            usart_print("Kd decreased\r\n");
+            pid_setting.kd -= num;
             break;
          }
          case 'v':
          case 'V':
          {
+            print_all_pid_params(&pid_setting);
             break;
          }
          case 't':
          {
-
+            set_pid_params_ref(pid_setting.kp, pid_setting.ki,
+                               pid_setting.kd, pid_setting.pos_ref);
+            usart_print("Changes applied!\r\n");
          }
          case 'q':
          {
+            usart_print("Quitting menu\r\n");
             done = true;
             break;
          }
@@ -160,5 +195,37 @@ void handle_user_inputs(char* buf, uint8_t* len)
    
    /* Clear buffers */
    usart_reset_buffers();
+}
+
+
+void print_all_pid_params(pid_ctrl_db_typ *db)
+{
+   char prinfbuf[25];
+
+   /* Kp, Ki, Kd */
+   usart_print("Kp \t = ");
+   sscanf(printbuf, %g, db->kp);
+   usart_print(printbuf); usart_print(" \r\n");
+
+   usart_print("Ki \t = ");
+   sscanf(printbuf, %g, db->ki);
+   usart_print(printbuf); usart_print(" \r\n");
+
+   usart_print("Kd \t = ");
+   sscanf(printbuf, %g, db->kd);
+   usart_print(printbuf); usart_print(" \r\n");
+
+   /* Positions and drive */
+   usart_print("Pref\t = ");
+   sscanf(printbuf, %g, db->pos_ref);
+   usart_print(printbuf); usart_print(" \r\n");
+
+   usart_print("Pm\t = ");
+   sscanf(printbuf, %g, db->pos_now);
+   usart_print(printbuf); usart_print(" \r\n");
+
+   usart_print("Drv\t = ");
+   sscanf(printbuf, %d, db->pid_drv);
+   usart_print(printbuf); usart_print(" \r\n");
 }
 

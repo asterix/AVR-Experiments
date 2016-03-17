@@ -16,7 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
 Function:  UART based text menu user interface
-Created:   02-Mar-2016
+Created:   16-Mar-2016
 Hardware:  ATMega32U4 
 ---------------------------------------------------------------------------*/
 
@@ -33,6 +33,7 @@ Hardware:  ATMega32U4
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
+extern void set_pid_params_ref(double kp, double ki, double kd, uint32_t ref);
 
 typedef enum
 {
@@ -41,9 +42,25 @@ typedef enum
 } task_name_typ;
 
 
+typedef struct
+{
+   double kp;
+   double kd;
+   double ki;
+   uint32_t pos_ref;
+   uint32_t pos_now;
+   uint8_t pid_drv;
+} pid_ctrl_db_typ;
 
-void menu_uart_prompt();
+
+void menu_uart_prompt(void);
 
 void handle_user_inputs(char* buf, uint8_t* len);
+
+void startup_menu(void);
+
+void init_ctrl_db_settings(pid_ctrl_db_typ *db);
+
+void print_all_pid_params(pid_ctrl_db_typ *db);
 
 #endif /* _MENU_UART_H_ */

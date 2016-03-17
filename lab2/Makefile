@@ -19,7 +19,7 @@ OCFLAGS = -R .eeprom -O ihex
 
 ## Linker specific ##
 LPATHS  = /usr/lib/avr/lib/
-LDFLAGS = -Wl,-gc-sections -Wl,-relax
+LDFLAGS = -Wl,-gc-sections -Wl,-relax,-u,vfscanf,-u,vfprintf -lscanf_flt -lprintf_flt -lm
 
 ## Target ##
 TARGET  = main
