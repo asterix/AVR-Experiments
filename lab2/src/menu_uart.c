@@ -222,8 +222,8 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
    sprintf(printbuf, "%d", db->pos_now);
    usart_print(printbuf); usart_print(" \r\n");
 
-   usart_print("Drv\t = ");
-   sprintf(printbuf, "%d", db->pid_drv);
+   usart_print("T(drv)\t = ");
+   sprintf(printbuf, "%f", db->pid_drv);
    usart_print(printbuf); usart_print(" \r\n");
 }
 

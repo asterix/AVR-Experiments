@@ -49,7 +49,7 @@ typedef struct
    int16_t err;
    uint16_t pos_ref;
    uint16_t pos_now;
-   uint8_t pid_drv;
+   float pid_drv;
 } pid_ctrl_db_typ;
 
 

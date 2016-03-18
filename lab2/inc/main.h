@@ -54,6 +54,17 @@ extern button_list_typ *buttons;
                            { __asm__ __volatile("nop":::);}
 
 
+/* Generic buffer */
+#define CBUF_SIZE  100
+#define CBUF_INVL  0xFFFF
+
+typedef struct
+{
+   uint16_t data[CBUF_SIZE];
+   uint8_t full;
+   uint8_t ridx;
+   uint8_t widx;
+} buffer_typ;
 
 
 void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
@@ -63,6 +74,14 @@ void check_buttons(void);
 void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
 const pid_ctrl_db_typ* get_pid_params_ref();
+
+
+/* Buffer maintenance */
+void enqueue_buffer(volatile buffer_typ *cbuf, uint16_t c);
+
+void reset_buffer(volatile buffer_typ *cbuf);
+
+uint16_t dequeue_buffer(volatile buffer_typ *cbuf);
 
 
 /* Helpers */

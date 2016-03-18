@@ -30,6 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 /* Globals */
 volatile dc_motor_typ motor2;
 volatile pid_ctrl_db_typ pid_ctrl;
+volatile buffer_typ lbuf;
 
 
 /* Main */
@@ -67,14 +68,14 @@ void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
    int16_t err = pid->pos_ref - m->enc_count;
 
    /* Proportional */
-   double p_out = pid->kp * err;
+   float p_out = pid->kp * err;
 
    /* Derivative */
-   double d_out = pid->kd * (double)(err - pid->err)/100;
+   float d_out = pid->kd * (float)(err - pid->err)/100;
    pid->err = err;
 
    /* Total drive */
-   double t_out = p_out - d_out;
+   float t_out = p_out - d_out;
 
    /* Direction changes */
    if(t_out < 0)
@@ -120,10 +121,52 @@ void startup_appl()
 }
 
 
+/* Buffer maintenance */
+void enqueue_buffer(volatile buffer_typ *cbuf, uint16_t c)
+{
+   if(cbuf->full <= CBUF_SIZE)
+   {
+      cbuf->data[cbuf->widx] = c;
+      if(++cbuf->widx >= CBUF_SIZE)
+      {
+         cbuf->widx = 0;
+      }
+      cbuf->full++;
+   }
+}
+
+
+void reset_buffer(volatile buffer_typ *cbuf)
+{
+   cbuf->full = cbuf->ridx = cbuf->widx = 0;
+   for(int i = 0; i < CBUF_SIZE; i++)
+   {
+      cbuf->data[i] = 0;
+   }
+}
+
+
+uint16_t dequeue_buffer(volatile buffer_typ *cbuf)
+{
+   uint16_t res = CBUF_INVL;
+   if(cbuf->full > 0)
+   {
+      res = cbuf->data[cbuf->ridx];
+      if(++cbuf->ridx >= CBUF_SIZE)
+      {
+         cbuf->ridx = 0;
+      }
+      cbuf->full--;
+   }
+   return res;
+}
+
+
 /* System vars re-init */
 void reset_system_vars()
 {
    reset_system_data_default();
+   reset_buffer(&lbuf);
 }
 
 
@@ -144,11 +187,18 @@ const pid_ctrl_db_typ* get_pid_params_ref()
 }
 
 
+/* Insert into PID log buffer */
+void pid_log_output(uint16_t out)
+{
+   enqueue_buffer(&lbuf, out);
+}
+
+
 /* Default startup config */
 void reset_system_data_default()
 {
    /* PID clear */
-   pid_ctrl.kp = 0.05;
+   pid_ctrl.kp = 0.73;
    pid_ctrl.kd = pid_ctrl.ki = 0;
    pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
 
@@ -185,6 +235,18 @@ void initialize_local()
    if(result)
    {
       usart_register_rx_cb(handle_user_inputs);
+   }
+
+   /* Timer 0 - logging */
+   if(result)
+   {
+      result = timer_0_setup_autoreload(15);
+   }
+
+   /* Timer 0 interrupt - logging */
+   if(result)
+   {
+      timer_0_interrupt_enable('A');
    }
 
    /* Timer 1 - PWM - Motor */
@@ -235,6 +297,11 @@ ISR(PCINT0_vect)
    dc_motor_check_encoders(&motor2);
 }
 
+/* Timer 0 - PID logging */
+ISR(TIMER0_COMPA_vect)
+{
+   pid_log_output(motor2.enc_count);
+}
 
 
 /* Check all button presses */
