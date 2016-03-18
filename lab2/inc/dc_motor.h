@@ -63,5 +63,9 @@ void dc_motor_reg_speed_fn(void (*fptr)(uint8_t dc));
 
 void dc_motor_dir_calibrate(volatile dc_motor_typ *m);
 
+double dc_motor_count_to_degs(uint32_t cnt, uint16_t revc);
+
+uint32_t dc_motor_degs_to_count(double deg, uint16_t revc);
+
 
 #endif /* _DC_MOTOR_H_ */

@@ -16,7 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
 Function:  UART based text menu user interface - motor control
-Created:   10-Mar-2016
+Created:   16-Mar-2016
 Hardware:  ATMega32U4 
 ---------------------------------------------------------------------------*/
 
@@ -39,21 +39,8 @@ q         -> Quit menu\r\n\
 ------------------------------------------------------------\r\n"};
 
 static bool volatile done = false;
-static pid_ctrl_db_typ pid_setting;
+pid_ctrl_db_typ pid_setting;
 
-
-
-/* Initialize */
-void startup_menu()
-{
-   init_ctrl_db_settings(&pid_setting);
-}
-
-void init_ctrl_db_settings(pid_ctrl_db_typ *db)
-{
-   db->kp = db->kd = db->ki = 0;
-   db->pos_ref = db->pos_now = db->pid_drv = 0;
-}
 
 
 /* Menu mode */
@@ -113,6 +100,8 @@ void handle_user_inputs(char* buf, uint8_t* len)
 
    if(nargs >= 1)
    {
+      pid_ctrl_db_typ newpid = *(get_pid_params_ref());
+
       switch(op)
       {
          case 'r':
@@ -120,7 +109,9 @@ void handle_user_inputs(char* buf, uint8_t* len)
          {
             if(nargs == 2)
             {
-               pid_setting.pos_ref += (int)num;
+               usart_print("Reference set\r\n");
+               newpid.pos_ref = (int)num;
+               set_pid_params_ref(&newpid);
             }
             else
             {
@@ -131,38 +122,41 @@ void handle_user_inputs(char* buf, uint8_t* len)
          case 'P':
          {
             usart_print("Kp increased\r\n");
-            pid_setting.kp += num;
+            newpid.kp += num;
+            set_pid_params_ref(&newpid);
             break;
          }
          case 'p':
          {
             usart_print("Kp decreased\r\n");
-            pid_setting.kp -= num;
+            newpid.kp -= num;
+            set_pid_params_ref(&newpid);
             break;
          }
          case 'D':
          {
             usart_print("Kd increased\r\n");
-            pid_setting.kd += num;
+            newpid.kd += num;
+            set_pid_params_ref(&newpid);
             break;
          }
          case 'd':
          {
             usart_print("Kd decreased\r\n");
-            pid_setting.kd -= num;
+            newpid.kd -= num;
+            set_pid_params_ref(&newpid);
             break;
          }
          case 'v':
          case 'V':
          {
-            print_all_pid_params(&pid_setting);
+            print_all_pid_params(&newpid);
             break;
          }
          case 't':
          {
-            set_pid_params_ref(pid_setting.kp, pid_setting.ki,
-                               pid_setting.kd, pid_setting.pos_ref);
-            usart_print("Changes applied!\r\n");
+            usart_print("Executing trajectories!\r\n");
+            break;
          }
          case 'q':
          {
@@ -190,8 +184,8 @@ void handle_user_inputs(char* buf, uint8_t* len)
    if(!done)
    {
       usart_print(WAITING_DIALOGUE);
-      usart_manage_trx(U_ENABLE, USART_RX);
    }
+   usart_manage_trx(U_ENABLE, USART_RX);
    
    /* Clear buffers */
    usart_reset_buffers();
@@ -201,6 +195,10 @@ void handle_user_inputs(char* buf, uint8_t* len)
 void print_all_pid_params(pid_ctrl_db_typ *db)
 {
    char printbuf[25];
+
+   usart_print("\r\n-----------------------\r\n");
+   usart_print("    PID PARAMETERS     ");
+   usart_print("\r\n-----------------------\r\n");
 
    /* Kp, Ki, Kd */
    usart_print("Kp \t = ");

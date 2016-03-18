@@ -46,7 +46,7 @@ extern button_list_typ *buttons;
 #define MOTOR2_FREQ       20000
 
 /* Absolute response duty cycles */
-#define PWM_DC_MAX        75
+#define PWM_DC_MAX        50
 #define PWM_DC_MIN        0
 
 
@@ -56,13 +56,13 @@ extern button_list_typ *buttons;
 
 
 
-void run_pid(dc_motor_typ *m, pid_ctrl_db_typ *pid);
+void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
 
 void check_buttons(void);
 
-void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref);
+void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
-volatile pid_ctrl_db_typ* get_pid_params_ref();
+const pid_ctrl_db_typ* get_pid_params_ref();
 
 
 /* Helpers */

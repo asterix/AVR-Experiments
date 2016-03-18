@@ -53,6 +53,8 @@ int main()
    /* Main loop */
    while(1)
    {
+      run_pid(&motor2, &pid_ctrl);
+      _delay_ms(100);
    }
 
    return 0;
@@ -60,8 +62,41 @@ int main()
 
 
 /* PID controller */
-void run_pid(dc_motor_typ *m, pid_ctrl_db_typ *pid)
+void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
 {
+   int16_t err = pid->pos_ref - m->enc_count;
+
+   /* Proportional */
+   double p_out = pid->kp * err;
+
+   /* Derivative */
+   double d_out = pid->kd * (double)(err - pid->err)/100;
+   pid->err = err;
+
+   /* Total drive */
+   double t_out = p_out - d_out;
+
+   /* Direction changes */
+   if(t_out < 0)
+   {
+      dc_motor_set_direction(m, CCW);
+   }
+   else
+   {
+      dc_motor_set_direction(m, CW);
+   }
+
+   /* PWM saturation check */
+   if(abs(t_out) > PWM_DC_MAX)
+   {
+      t_out = PWM_DC_MAX;
+   }
+
+   /* Update current PID control values */
+   pid->pos_now = m->enc_count;
+   pid->pid_drv = t_out;
+
+   dc_motor_set_speed((uint8_t)abs(t_out));
 }
 
 /*-----------------------------------------------------------
@@ -89,23 +124,23 @@ void startup_appl()
 void reset_system_vars()
 {
    reset_system_data_default();
-   startup_menu();
 }
 
 
 /* Set new PID control parameters */
-void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref)
+void set_pid_params_ref(pid_ctrl_db_typ* npid)
 {
-   pid_ctrl.kp = kp;
-   pid_ctrl.kd = kd;
-   pid_ctrl.ki = ki;
-   pid_ctrl.pos_ref = ref;
+   pid_ctrl.kp = npid->kp;
+   pid_ctrl.ki = npid->ki;
+   pid_ctrl.kd = npid->kd;
+   pid_ctrl.pos_ref = npid->pos_ref;
 }
 
 
-volatile pid_ctrl_db_typ* get_pid_params_ref()
+/* Access PID parameters */
+const pid_ctrl_db_typ* get_pid_params_ref()
 {
-   return &pid_ctrl;
+   return (const pid_ctrl_db_typ*)(&pid_ctrl);
 }
 
 
@@ -113,7 +148,8 @@ volatile pid_ctrl_db_typ* get_pid_params_ref()
 void reset_system_data_default()
 {
    /* PID clear */
-   pid_ctrl.kp = pid_ctrl.kd = pid_ctrl.ki = 0;
+   pid_ctrl.kp = 0.05;
+   pid_ctrl.kd = pid_ctrl.ki = 0;
    pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
 
    /* Motor init */
@@ -143,6 +179,12 @@ void initialize_local()
    if(result) 
    {
       result = usart_1_enable_interrupts();
+   }
+
+   /* Register UART callback */
+   if(result)
+   {
+      usart_register_rx_cb(handle_user_inputs);
    }
 
    /* Timer 1 - PWM - Motor */

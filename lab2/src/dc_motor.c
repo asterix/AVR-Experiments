@@ -140,3 +140,17 @@ void dc_motor_dir_calibrate(volatile dc_motor_typ *m)
    m->enc_count = 0;
 }
 
+
+/* Convert encoder counts to degrees */
+double dc_motor_count_to_degs(uint32_t cnt, uint16_t revc)
+{
+   return ((double)cnt/revc * 360);
+}
+
+
+/* Convert degrees to encoder counts */
+uint32_t dc_motor_degs_to_count(double deg, uint16_t revc)
+{
+   return ((uint32_t)(deg/360 * revc));
+}
+

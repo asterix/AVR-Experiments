@@ -33,7 +33,6 @@ Hardware:  ATMega32U4
 
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
-extern void set_pid_params_ref(float kp, float ki, float kd, uint16_t ref);
 
 typedef enum
 {
@@ -47,19 +46,20 @@ typedef struct
    float kp;
    float kd;
    float ki;
+   int16_t err;
    uint16_t pos_ref;
    uint16_t pos_now;
    uint8_t pid_drv;
 } pid_ctrl_db_typ;
 
 
+extern void set_pid_params_ref(pid_ctrl_db_typ* npid);
+
+extern const pid_ctrl_db_typ* get_pid_params_ref();
+
 void menu_uart_prompt(void);
 
 void handle_user_inputs(char* buf, uint8_t* len);
-
-void startup_menu(void);
-
-void init_ctrl_db_settings(pid_ctrl_db_typ *db);
 
 void print_all_pid_params(pid_ctrl_db_typ *db);
 
