@@ -30,7 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 /* Globals */
 volatile dc_motor_typ motor2;
 volatile pid_ctrl_db_typ pid_ctrl;
-volatile buffer_typ lbuf, tbuf, ebuf;
+buffer_typ lbuf, tbuf, ebuf, sbuf;
 
 
 /* Main */
@@ -54,30 +54,43 @@ int main()
    /* Main loop */
    while(1)
    {
-      run_pid(&motor2, &pid_ctrl);
-      _delay_ms(100);
+      if(dequeue_buffer(&ebuf, (float*)&pid_ctrl.pos_ref))
+      {
+         while(!run_pid(&motor2, &pid_ctrl))
+         {
+            _delay_ms(100);
+         }
+      }
    }
 
    return 0;
 }
 
 
+
+/*-----------------------------------------------------------
+              PID CONTROL - DC MOTOR
+-----------------------------------------------------------*/
 /* PID controller */
-void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
+bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
 {
-   int16_t err = pid->pos_ref - m->enc_count;
+   float err = pid->pos_ref - m->enc_count;
 
    /* Proportional */
    float p_out = pid->kp * err;
 
+   /* Integral */
+   float i_out = 0;
+
    /* Derivative */
-   float d_out = pid->kd * (float)(err - pid->err)/100;
+   float d_out = pid->kd * (err - pid->err)/100;
    pid->err = err;
 
-   /* Total drive */
-   float t_out = p_out - d_out;
+   /* PID control aggregate */
+   float t_out = p_out + i_out - d_out;
 
-   /* Direction changes */
+
+   /* PID output -> Direction */
    if(t_out < 0)
    {
       dc_motor_set_direction(m, CCW);
@@ -87,58 +100,22 @@ void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
       dc_motor_set_direction(m, CW);
    }
 
-   /* PWM saturation check */
-   if(abs(t_out) > PWM_DC_MAX)
+   /* PID output -> PWM saturation check */
+   if(fabs(t_out) > PWM_DC_MAX)
    {
       t_out = PWM_DC_MAX;
    }
 
-   /* Update current PID control values */
+   /* PID output -> Save */
    pid->pos_now = m->enc_count;
    pid->pid_drv = t_out;
 
-   dc_motor_set_speed((uint8_t)abs(t_out));
-}
+   /* PID output -> Drive */
+   dc_motor_set_speed((uint8_t)fabs(t_out));
+   enqueue_buffer(&sbuf, fabs(t_out));
 
-/*-----------------------------------------------------------
-                      HELPERS
------------------------------------------------------------*/
-void startup_appl()
-{
-   /* Set port directions */
-   DDRB |= (1 << MOTOR2_PWM_PIN);
-   DDRE |= (1 << MOTOR2_DIR_PIN);
-
-   DDRB &= ~((1 << MOTOR2_ENC_CH_A)|(1 << MOTOR2_ENC_CH_B));
-
-   /* Startup show */
-   leds_turn_on();
-   _delay_ms(1000);
-   leds_turn_off();
-
-   /* Clear all vars */
-   reset_system_vars();
-}
-
-
-/* System vars re-init */
-void reset_system_vars()
-{
-   reset_system_data_default();
-
-   /* Allocate buffer memories */
-   lbuf.size = LBUF_SIZE;
-   lbuf.data = malloc(sizeof(uint16_t) * lbuf.size);
-   reset_buffer(&lbuf);
-
-   /* Trajectory buffer */
-   tbuf.size = TBUF_SIZE;
-   tbuf.data = malloc(sizeof(uint16_t) * tbuf.size);
-   reset_buffer(&tbuf);
-
-   ebuf.size = LBUF_SIZE;
-   ebuf.data = malloc(sizeof(uint16_t) * ebuf.size);
-   reset_buffer(&ebuf);
+   /* Check settling */
+   return pid_is_settled();
 }
 
 
@@ -159,29 +136,43 @@ const pid_ctrl_db_typ* get_pid_params_ref()
 }
 
 
-/* Insert into PID log buffer */
+/* Log PID system response */
 void pid_log_output(uint16_t out)
 {
    enqueue_buffer(&lbuf, out);
 }
 
 
-/* Default startup config */
-void reset_system_data_default()
+/* Check if system response has settled */
+bool pid_is_settled()
 {
-   /* PID init */
-   pid_ctrl.kp = 0.05;
-   pid_ctrl.kd = 10;
-   pid_ctrl.ki = 0;
-   pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
+   bool res = false;
+   float sum = 0, val;
 
-   /* Motor init */
-   dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
-   dc_motor_init(&motor2, &PINB, (1 << MOTOR2_ENC_CH_A), (1 << MOTOR2_ENC_CH_B), &PORTE,
-                     (1 << MOTOR2_DIR_PIN), (uint16_t)(MOTOR2_ENC_CPR * MOTOR2_GEAR_RATIO));
+   /* Analyse PID drive values */
+   if(sbuf.full == sbuf.size)
+   {
+      for(int i = 0; i < sbuf.size; i++)
+      {
+         dequeue_buffer(&sbuf, &val);
+         sum += val;
+      }
+
+      /* Drive Avg < Min response PWM dutycycle */
+      sum /= sbuf.size;
+      if(sum < PWM_NO_RESP)
+      {
+         res = true;
+      }
+   }
+
+   return res;
 }
 
 
+/*-----------------------------------------------------------
+                 STARTUP CONFIGURATION
+-----------------------------------------------------------*/
 /* Configure peripherals */
 void initialize_local()
 {
@@ -258,6 +249,73 @@ void leds_turn_off()
    PORTC &= ~(1 << LED_YELLOW);
    PORTD |= (1 << LED_GREEN);
 }
+
+
+void startup_appl()
+{
+   /* Set port directions */
+   DDRB |= (1 << MOTOR2_PWM_PIN);
+   DDRE |= (1 << MOTOR2_DIR_PIN);
+
+   DDRB &= ~((1 << MOTOR2_ENC_CH_A)|(1 << MOTOR2_ENC_CH_B));
+
+   /* Startup show */
+   leds_turn_on();
+   _delay_ms(1000);
+   leds_turn_off();
+
+   /* Clear all vars */
+   reset_system_vars();
+}
+
+
+/* System vars re-init */
+void reset_system_vars()
+{
+   reset_system_data_default();
+
+   /* Allocate buffer memories */
+   lbuf.size = LBUF_SIZE;
+   lbuf.data = malloc(sizeof(float) * lbuf.size);
+   reset_buffer(&lbuf);
+
+   /* Trajectory buffer */
+   tbuf.size = TBUF_SIZE;
+   tbuf.data = malloc(sizeof(float) * tbuf.size);
+   reset_buffer(&tbuf);
+
+   ebuf.size = LBUF_SIZE;
+   ebuf.data = malloc(sizeof(float) * ebuf.size);
+   reset_buffer(&ebuf);
+
+   /* Running average for PID settling detection */
+   sbuf.size = SBUF_SIZE;
+   sbuf.data = malloc(sizeof(float) * sbuf.size);
+   reset_buffer(&sbuf);
+}
+
+
+/* Default startup config */
+void reset_system_data_default()
+{
+   /* PID init */
+   pid_ctrl.kp = 0.05;
+   pid_ctrl.kd = 10;
+   pid_ctrl.ki = 0;
+   pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
+
+   /* Motor init */
+   dc_motor_reg_speed_fn(timer_1_setdc_pfc_pwm);
+   
+   dc_motor_init(&motor2,
+                 &PINB,
+                 (1 << MOTOR2_ENC_CH_A), 
+                 (1 << MOTOR2_ENC_CH_B),
+                 &PORTE,
+                 (1 << MOTOR2_DIR_PIN),
+                 (uint16_t)(MOTOR2_ENC_CPR * MOTOR2_GEAR_RATIO));
+}
+
 
 
 /*-----------------------------------------------------------

@@ -46,8 +46,8 @@ typedef struct
    float kp;
    float kd;
    float ki;
-   int16_t err;
-   uint16_t pos_ref;
+   float err;
+   float pos_ref;
    uint16_t pos_now;
    float pid_drv;
 } pid_ctrl_db_typ;
@@ -56,7 +56,7 @@ typedef struct
 /* Generic buffer */
 typedef struct
 {
-   uint16_t *data;
+   float *data;
    uint8_t full;
    uint8_t size;
    uint8_t ridx;
@@ -76,12 +76,14 @@ void print_all_pid_params(pid_ctrl_db_typ *db);
 
 
 /* Buffer maintenance */
-void enqueue_buffer(buffer_typ *cbuf, int16_t c);
+void enqueue_buffer(buffer_typ *cbuf, float c);
 
 void reset_buffer(buffer_typ *cbuf);
 
-bool dequeue_buffer(buffer_typ *cbuf, int16_t* v)
+bool dequeue_buffer(buffer_typ *cbuf, float* v);
 
 void copy_buffer(buffer_typ *t, buffer_typ *s);
+
+void print_buffer(buffer_typ *b);
 
 #endif /* _MENU_UART_H_ */

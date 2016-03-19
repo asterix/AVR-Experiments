@@ -48,6 +48,7 @@ extern button_list_typ *buttons;
 /* Absolute response duty cycles */
 #define PWM_DC_MAX        50
 #define PWM_DC_MIN        0
+#define PWM_NO_RESP       3
 
 
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
@@ -56,16 +57,20 @@ extern button_list_typ *buttons;
 
 /* Buffer sizes */
 #define LBUF_SIZE  100
-#define IBUF_SIZE  20
+#define TBUF_SIZE  20
+#define SBUF_SIZE  10
 
 
-void run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
+/* PID Control */
+bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
 
 void check_buttons(void);
 
 void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
 const pid_ctrl_db_typ* get_pid_params_ref();
+
+bool pid_is_settled();
 
 
 /* Helpers */

@@ -28,7 +28,7 @@ const char menu_options[] PROGMEM = {" \r\n \
 ------------------------------------------------------------\r\n\
                    PID CONTROL MENU \r\n\
 ------------------------------------------------------------\r\n\
-r/R <num> -> Set reference position to <num> encoder counts\r\n\
+r/R <num> -> Set new target to <+/-num> degrees (relative)\r\n\
 P <num>   -> Increase Kp by <num> amount\r\n\
 p <num>   -> Decrease Kp by <num> amount\r\n\
 D <num>   -> Increase Kd by <num> amount\r\n\
@@ -38,9 +38,9 @@ t         -> Execute the set trajectory\r\n\
 q         -> Quit menu\r\n\
 ------------------------------------------------------------\r\n"};
 
-static bool volatile done = false;
-pid_ctrl_db_typ pid_setting;
 
+static bool volatile done = false;
+extern buffer_typ tbuf, ebuf, lbuf;
 
 
 /* Menu mode */
@@ -110,7 +110,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
             if(nargs == 2)
             {
                usart_print("Reference set\r\n");
-               enqueue_buffer(tbuf, (int16_t)num);
+               enqueue_buffer(&tbuf, num);
             }
             else
             {
@@ -156,7 +156,14 @@ void handle_user_inputs(char* buf, uint8_t* len)
          {
             copy_buffer(&ebuf, &tbuf);
             reset_buffer(&tbuf);
-            usart_print("Executing trajectories!\r\n");
+            usart_print("Executing trajectory\r\n");
+            reset_buffer(&lbuf);
+            break;
+         }
+         case 'l':
+         {
+            usart_print("Print log buffer: \r\n \r\n");
+            print_buffer(&lbuf);
             break;
          }
          case 'q':
@@ -216,7 +223,7 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
 
    /* Positions and drive */
    usart_print("Pref\t = ");
-   sprintf(printbuf, "%d", db->pos_ref);
+   sprintf(printbuf, "%f", db->pos_ref);
    usart_print(printbuf); usart_print(" \r\n");
 
    usart_print("Pm\t = ");
@@ -230,7 +237,7 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
 
 
 /* Buffer maintenance */
-void enqueue_buffer(buffer_typ *cbuf, int16_t c)
+void enqueue_buffer(buffer_typ *cbuf, float c)
 {
    if(cbuf->full <= cbuf->size)
    {
@@ -254,7 +261,7 @@ void reset_buffer(buffer_typ *cbuf)
 }
 
 
-bool dequeue_buffer(buffer_typ *cbuf, int16_t* v)
+bool dequeue_buffer(buffer_typ *cbuf, float* v)
 {
    bool res = false;
    if(cbuf->full > 0)
@@ -281,4 +288,22 @@ void copy_buffer(buffer_typ *t, buffer_typ *s)
    {
       t->data[i] = s->data[i];
    }
+}
+
+
+void print_buffer(buffer_typ *b)
+{
+   char pr[15];
+   usart_print("--------------------\r\n");
+
+   for(int i = 0; i < b->size; i++)
+   {
+      sprintf(pr, "%d", i);
+      usart_print(pr);
+      usart_print("\t");
+      sprintf(pr, "%f", b->data[i]);
+      usart_print(pr); usart_print(" \r\n");
+   }
+   
+   usart_print("--------------------\r\n");
 }
