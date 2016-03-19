@@ -110,8 +110,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
             if(nargs == 2)
             {
                usart_print("Reference set\r\n");
-               newpid.pos_ref = (int)num;
-               set_pid_params_ref(&newpid);
+               enqueue_buffer(tbuf, (int16_t)num);
             }
             else
             {
@@ -155,6 +154,8 @@ void handle_user_inputs(char* buf, uint8_t* len)
          }
          case 't':
          {
+            copy_buffer(&ebuf, &tbuf);
+            reset_buffer(&tbuf);
             usart_print("Executing trajectories!\r\n");
             break;
          }
@@ -227,3 +228,57 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
    usart_print(printbuf); usart_print(" \r\n");
 }
 
+
+/* Buffer maintenance */
+void enqueue_buffer(buffer_typ *cbuf, int16_t c)
+{
+   if(cbuf->full <= cbuf->size)
+   {
+      cbuf->data[cbuf->widx] = c;
+      if(++cbuf->widx >= cbuf->size)
+      {
+         cbuf->widx = 0;
+      }
+      cbuf->full++;
+   }
+}
+
+
+void reset_buffer(buffer_typ *cbuf)
+{
+   cbuf->full = cbuf->ridx = cbuf->widx = 0;
+   for(int i = 0; i < cbuf->size; i++)
+   {
+      cbuf->data[i] = 0;
+   }
+}
+
+
+bool dequeue_buffer(buffer_typ *cbuf, int16_t* v)
+{
+   bool res = false;
+   if(cbuf->full > 0)
+   {
+      *v = cbuf->data[cbuf->ridx];
+      if(++cbuf->ridx >= cbuf->size)
+      {
+         cbuf->ridx = 0;
+      }
+      cbuf->full--;
+      res = true;
+   }
+   return res;
+}
+
+
+void copy_buffer(buffer_typ *t, buffer_typ *s)
+{
+   t->full = s->full;
+   t->ridx = s->ridx;
+   t->widx = s->widx;
+
+   for(int i = 0; i < s->size; i++)
+   {
+      t->data[i] = s->data[i];
+   }
+}

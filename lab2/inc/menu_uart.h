@@ -53,6 +53,17 @@ typedef struct
 } pid_ctrl_db_typ;
 
 
+/* Generic buffer */
+typedef struct
+{
+   uint16_t *data;
+   uint8_t full;
+   uint8_t size;
+   uint8_t ridx;
+   uint8_t widx;
+} buffer_typ;
+
+
 extern void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
 extern const pid_ctrl_db_typ* get_pid_params_ref();
@@ -62,5 +73,15 @@ void menu_uart_prompt(void);
 void handle_user_inputs(char* buf, uint8_t* len);
 
 void print_all_pid_params(pid_ctrl_db_typ *db);
+
+
+/* Buffer maintenance */
+void enqueue_buffer(buffer_typ *cbuf, int16_t c);
+
+void reset_buffer(buffer_typ *cbuf);
+
+bool dequeue_buffer(buffer_typ *cbuf, int16_t* v)
+
+void copy_buffer(buffer_typ *t, buffer_typ *s);
 
 #endif /* _MENU_UART_H_ */

@@ -30,7 +30,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 /* Globals */
 volatile dc_motor_typ motor2;
 volatile pid_ctrl_db_typ pid_ctrl;
-volatile buffer_typ lbuf;
+volatile buffer_typ lbuf, tbuf, ebuf;
 
 
 /* Main */
@@ -121,52 +121,24 @@ void startup_appl()
 }
 
 
-/* Buffer maintenance */
-void enqueue_buffer(volatile buffer_typ *cbuf, uint16_t c)
-{
-   if(cbuf->full <= CBUF_SIZE)
-   {
-      cbuf->data[cbuf->widx] = c;
-      if(++cbuf->widx >= CBUF_SIZE)
-      {
-         cbuf->widx = 0;
-      }
-      cbuf->full++;
-   }
-}
-
-
-void reset_buffer(volatile buffer_typ *cbuf)
-{
-   cbuf->full = cbuf->ridx = cbuf->widx = 0;
-   for(int i = 0; i < CBUF_SIZE; i++)
-   {
-      cbuf->data[i] = 0;
-   }
-}
-
-
-uint16_t dequeue_buffer(volatile buffer_typ *cbuf)
-{
-   uint16_t res = CBUF_INVL;
-   if(cbuf->full > 0)
-   {
-      res = cbuf->data[cbuf->ridx];
-      if(++cbuf->ridx >= CBUF_SIZE)
-      {
-         cbuf->ridx = 0;
-      }
-      cbuf->full--;
-   }
-   return res;
-}
-
-
 /* System vars re-init */
 void reset_system_vars()
 {
    reset_system_data_default();
+
+   /* Allocate buffer memories */
+   lbuf.size = LBUF_SIZE;
+   lbuf.data = malloc(sizeof(uint16_t) * lbuf.size);
    reset_buffer(&lbuf);
+
+   /* Trajectory buffer */
+   tbuf.size = TBUF_SIZE;
+   tbuf.data = malloc(sizeof(uint16_t) * tbuf.size);
+   reset_buffer(&tbuf);
+
+   ebuf.size = LBUF_SIZE;
+   ebuf.data = malloc(sizeof(uint16_t) * ebuf.size);
+   reset_buffer(&ebuf);
 }
 
 
@@ -197,9 +169,10 @@ void pid_log_output(uint16_t out)
 /* Default startup config */
 void reset_system_data_default()
 {
-   /* PID clear */
-   pid_ctrl.kp = 0.73;
-   pid_ctrl.kd = pid_ctrl.ki = 0;
+   /* PID init */
+   pid_ctrl.kp = 0.05;
+   pid_ctrl.kd = 10;
+   pid_ctrl.ki = 0;
    pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
 
    /* Motor init */
@@ -237,16 +210,16 @@ void initialize_local()
       usart_register_rx_cb(handle_user_inputs);
    }
 
-   /* Timer 0 - logging */
+   /* Timer 4 - logging */
    if(result)
    {
-      result = timer_0_setup_autoreload(15);
+      result = timer_4_setup_normal(50);
    }
 
-   /* Timer 0 interrupt - logging */
+   /* Timer 4 interrupt - logging */
    if(result)
    {
-      timer_0_interrupt_enable('A');
+      timer_4_interrupt_enable('D');
    }
 
    /* Timer 1 - PWM - Motor */
@@ -293,12 +266,12 @@ void leds_turn_off()
 /* All PCINTx detections are vectored here */
 ISR(PCINT0_vect)
 {
-   //check_buttons();
    dc_motor_check_encoders(&motor2);
 }
 
-/* Timer 0 - PID logging */
-ISR(TIMER0_COMPA_vect)
+
+/* Timer 4 - PID logging */
+ISR(TIMER4_COMPD_vect)
 {
    pid_log_output(motor2.enc_count);
 }
