@@ -36,7 +36,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 extern button_list_typ *buttons;
 
 
-/* Motor chars */
+/* Motor parameters */
 #define MOTOR2_GEAR_RATIO 46.85
 #define MOTOR2_ENC_CPR    48
 #define MOTOR2_ENC_CH_A   PORTB4
@@ -46,7 +46,7 @@ extern button_list_typ *buttons;
 #define MOTOR2_FREQ       20000
 
 /* Absolute response duty cycles */
-#define PWM_DC_MAX        50
+#define PWM_DC_MAX        66
 #define PWM_DC_MIN        0
 #define PWM_NO_RESP       3
 
@@ -62,15 +62,17 @@ extern button_list_typ *buttons;
 
 
 /* PID Control */
-bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
+#define PID_INTERVAL 100
 
-void check_buttons(void);
+bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
 
 void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
 const pid_ctrl_db_typ* get_pid_params_ref();
 
-bool pid_is_settled();
+void pid_log_output(int32_t out);
+
+bool pid_is_settled(buffer_typ *cap);
 
 
 /* Helpers */
@@ -85,4 +87,6 @@ void leds_turn_off(void);
 void reset_system_vars(void);
 
 void reset_system_data_default(void);
+
+void check_buttons(void);
 

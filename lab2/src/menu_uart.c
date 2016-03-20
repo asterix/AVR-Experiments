@@ -162,7 +162,7 @@ void handle_user_inputs(char* buf, uint8_t* len)
          }
          case 'l':
          {
-            usart_print("Print log buffer: \r\n \r\n");
+            usart_print("Print log buffer: \r\n");
             print_buffer(&lbuf);
             break;
          }
@@ -224,11 +224,11 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
    /* Positions and drive */
    usart_print("Pref\t = ");
    sprintf(printbuf, "%f", db->pos_ref);
-   usart_print(printbuf); usart_print(" \r\n");
+   usart_print(printbuf); usart_print("° \r\n");
 
    usart_print("Pm\t = ");
-   sprintf(printbuf, "%d", db->pos_now);
-   usart_print(printbuf); usart_print(" \r\n");
+   sprintf(printbuf, "%f", db->pos_now);
+   usart_print(printbuf); usart_print("° \r\n");
 
    usart_print("T(drv)\t = ");
    sprintf(printbuf, "%f", db->pid_drv);
@@ -239,7 +239,7 @@ void print_all_pid_params(pid_ctrl_db_typ *db)
 /* Buffer maintenance */
 void enqueue_buffer(buffer_typ *cbuf, float c)
 {
-   if(cbuf->full <= cbuf->size)
+   if(cbuf->full < cbuf->size)
    {
       cbuf->data[cbuf->widx] = c;
       if(++cbuf->widx >= cbuf->size)

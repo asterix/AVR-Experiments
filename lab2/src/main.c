@@ -56,9 +56,14 @@ int main()
    {
       if(dequeue_buffer(&ebuf, (float*)&pid_ctrl.pos_ref))
       {
+         /* Reset position references */
+         motor2.enc_count = 0;
+         pid_ctrl.err = dc_motor_degs_to_count(pid_ctrl.pos_ref, motor2.enc_revc);
+
+         /* Run PID to target */
          while(!run_pid(&motor2, &pid_ctrl))
          {
-            _delay_ms(100);
+            _delay_ms(PID_INTERVAL);
          }
       }
    }
@@ -74,7 +79,7 @@ int main()
 /* PID controller */
 bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
 {
-   float err = pid->pos_ref - m->enc_count;
+   float err = dc_motor_degs_to_count(pid->pos_ref, m->enc_revc) - m->enc_count;
 
    /* Proportional */
    float p_out = pid->kp * err;
@@ -83,12 +88,11 @@ bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
    float i_out = 0;
 
    /* Derivative */
-   float d_out = pid->kd * (err - pid->err)/100;
+   float d_out = pid->kd * (err - pid->err)/PID_INTERVAL;
    pid->err = err;
 
    /* PID control aggregate */
    float t_out = p_out + i_out - d_out;
-
 
    /* PID output -> Direction */
    if(t_out < 0)
@@ -107,15 +111,15 @@ bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid)
    }
 
    /* PID output -> Save */
-   pid->pos_now = m->enc_count;
+   pid->pos_now = dc_motor_count_to_degs(m->enc_count, m->enc_revc);
    pid->pid_drv = t_out;
 
    /* PID output -> Drive */
    dc_motor_set_speed((uint8_t)fabs(t_out));
    enqueue_buffer(&sbuf, fabs(t_out));
 
-   /* Check settling */
-   return pid_is_settled();
+   /* Check PID response settling */
+   return pid_is_settled(&sbuf);
 }
 
 
@@ -137,29 +141,29 @@ const pid_ctrl_db_typ* get_pid_params_ref()
 
 
 /* Log PID system response */
-void pid_log_output(uint16_t out)
+void pid_log_output(int32_t out)
 {
-   enqueue_buffer(&lbuf, out);
+   enqueue_buffer(&lbuf, dc_motor_count_to_degs(out, motor2.enc_revc));
 }
 
 
 /* Check if system response has settled */
-bool pid_is_settled()
+bool pid_is_settled(buffer_typ *cap)
 {
    bool res = false;
    float sum = 0, val;
 
    /* Analyse PID drive values */
-   if(sbuf.full == sbuf.size)
+   if(cap->full == cap->size)
    {
-      for(int i = 0; i < sbuf.size; i++)
+      for(int i = 0; i < cap->size; i++)
       {
-         dequeue_buffer(&sbuf, &val);
+         dequeue_buffer(cap, &val);
          sum += val;
       }
 
       /* Drive Avg < Min response PWM dutycycle */
-      sum /= sbuf.size;
+      sum /= cap->size;
       if(sum < PWM_NO_RESP)
       {
          res = true;
@@ -204,7 +208,7 @@ void initialize_local()
    /* Timer 4 - logging */
    if(result)
    {
-      result = timer_4_setup_normal(50);
+      result = timer_4_setup_normal(25);
    }
 
    /* Timer 4 interrupt - logging */
