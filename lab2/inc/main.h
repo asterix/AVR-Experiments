@@ -46,7 +46,7 @@ extern button_list_typ *buttons;
 #define MOTOR2_FREQ       20000
 
 /* Absolute response duty cycles */
-#define PWM_DC_MAX        66
+#define PWM_DC_MAX        60
 #define PWM_DC_MIN        0
 #define PWM_NO_RESP       3
 
@@ -56,7 +56,7 @@ extern button_list_typ *buttons;
 
 
 /* Buffer sizes */
-#define LBUF_SIZE  100
+#define LBUF_SIZE  200
 #define TBUF_SIZE  20
 #define SBUF_SIZE  10
 

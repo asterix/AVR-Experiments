@@ -50,6 +50,10 @@ int main()
    
    /* Calibrate DC Motor */
    dc_motor_reset(&motor2);
+
+   /* Print menu options */
+   menu_uart_prompt();
+   
    
    /* Main loop */
    while(1)

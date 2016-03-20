@@ -24,7 +24,7 @@ Hardware:  ATMega32U4
 
 
 /* String look up in flash memory */
-const char menu_options[] PROGMEM = {" \r\n \
+const char menu_options[] PROGMEM = {" \r\n\
 ------------------------------------------------------------\r\n\
                    PID CONTROL MENU \r\n\
 ------------------------------------------------------------\r\n\
@@ -35,7 +35,7 @@ D <num>   -> Increase Kd by <num> amount\r\n\
 d <num>   -> Decrease Kd by <num> amount\r\n\
 v/V       -> View the current Kp, Kd, Vm, Pr, Pm and T\r\n\
 t         -> Execute the set trajectory\r\n\
-q         -> Quit menu\r\n\
+l         -> Print system response logs\r\n\
 ------------------------------------------------------------\r\n"};
 
 
@@ -43,19 +43,9 @@ static bool volatile done = false;
 extern buffer_typ tbuf, ebuf, lbuf;
 
 
-/* Menu mode */
+/* Menu print */
 void menu_uart_prompt()
 {
-   uint8_t count = 0;
-   /* Clear buffers */
-   usart_reset_buffers();
-
-   /* Start comms */
-   usart_manage_trx(U_ENABLE, USART_TRX);
-
-   /* Register callback handler */
-   uint8_t cb_id = usart_register_rx_cb(handle_user_inputs);
-
    /* Read & print menu prompt from flash */
    int msg_len = strlen_P(menu_options);
    char out[2]; out[1] = '\0';
@@ -65,20 +55,6 @@ void menu_uart_prompt()
       out[0] = pgm_read_byte_near(menu_options + i);
       usart_print(out);
    }
-
-   while(!done)
-   {
-      if(count % 60 == 0)
-      {
-         usart_print(WAITING_DIALOGUE);
-      }
-      _delay_ms(500);
-      count++;
-   }
-
-   /* Remove any callbacks */
-   usart_deregister_rx_cb(cb_id);
-   done = false;
 }
 
 
