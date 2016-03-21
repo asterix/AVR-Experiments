@@ -16,6 +16,6 @@ t         -> Execute the set trajectory
 l         -> Print system response logs
 ------------------------------------------------------------
 ```
-* Back to back "r <num>" requests are queued. All of these are executed on "t" back to back after PID settling of the previous one. If the system response does not settle, you'll be stuck will oscillations on one of the requests.
-* All <num> values accept floating point real numbers.
+* Back to back "r \<num\>" requests are queued. All of these are executed on "t" back to back after PID settling of the previous one. If the system response does not settle, you'll be stuck will oscillations on one of the requests.
+* All \<num\> values accept floating point real numbers.
 * The logging buffer holds system response (T) captures upto 5 seconds after execute "t" is hit at 40Hz sampling frequency.
