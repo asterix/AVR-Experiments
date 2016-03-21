@@ -307,8 +307,8 @@ void reset_system_vars()
 void reset_system_data_default()
 {
    /* PID init */
-   pid_ctrl.kp = 0.05;
-   pid_ctrl.kd = 10;
+   pid_ctrl.kp = 0.45;
+   pid_ctrl.kd = 0.20;
    pid_ctrl.ki = 0;
    pid_ctrl.pos_ref = pid_ctrl.pos_now = pid_ctrl.pid_drv = 0;
 

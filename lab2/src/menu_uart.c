@@ -28,7 +28,7 @@ const char menu_options[] PROGMEM = {" \r\n\
 ------------------------------------------------------------\r\n\
                    PID CONTROL MENU \r\n\
 ------------------------------------------------------------\r\n\
-r/R <num> -> Set new target to <+/-num> degrees (relative)\r\n\
+r/R <num> -> Add a new target <+/-num> degrees (relative)\r\n\
 P <num>   -> Increase Kp by <num> amount\r\n\
 p <num>   -> Decrease Kp by <num> amount\r\n\
 D <num>   -> Increase Kd by <num> amount\r\n\
@@ -55,6 +55,7 @@ void menu_uart_prompt()
       out[0] = pgm_read_byte_near(menu_options + i);
       usart_print(out);
    }
+   usart_print(WAITING_DIALOGUE);
 }
 
 

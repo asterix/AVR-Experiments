@@ -62,7 +62,7 @@ extern button_list_typ *buttons;
 
 
 /* PID Control */
-#define PID_INTERVAL 100
+#define PID_INTERVAL 25
 
 bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
 
