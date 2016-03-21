@@ -19,3 +19,17 @@ l         -> Print system response logs
 * Back to back "r \<num\>" requests are queued. All of these are executed on "t" back to back after PID settling of the previous one. If the system response does not settle, you'll be stuck will oscillations on one of the requests.
 * All \<num\> values accept floating point real numbers.
 * The logging buffer holds system response (T) captures upto 5 seconds after execute "t" is hit at 40Hz sampling frequency.
+
+## Question 1
+* Encoder accuracy = 0.160° per encoder count.
+* 4% PWM duty cycle is the minimum needed to overcome coil inertia and back EMF to drive the motor.
+* At 25% duty cycle PCINT is triggered at 1.64KHz and at 75% duty cycle at 5.16KHz.
+* At about 20Hz PWM frequency ON and OFF portion start to manifest as jerking.
+
+## Question 2
+After tuning using multiple target values such as ```5°, 90°, 360°, 720° ``` below are my optimum PID gains.
+```
+Kp = 0.45
+Kd = 0.2
+```
+
