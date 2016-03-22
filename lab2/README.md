@@ -33,3 +33,6 @@ Kp = 0.45
 Kd = 0.2
 ```
 
+## Question 4
+### Optimal gains
+![Optimal gains' response](../blob/master/lab2/images/4-Opt.png?raw=true)
