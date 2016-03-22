@@ -601,9 +601,9 @@ void timer_3_interrupt_disable(char module)
 
 
 /* Timer 4 normal mode */
-bool timer_4_setup_normal(uint16_t delay)
+bool timer_4_setup_normal(float period)
 {
-   double freq = (double)1000/(2*delay);
+   double freq = (double)1000/(period);
    double xd = (double)64000000/freq;
    volatile uint16_t top = 0;
 

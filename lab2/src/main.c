@@ -52,8 +52,7 @@ int main()
    dc_motor_reset(&motor2);
 
    /* Print menu options */
-   menu_uart_prompt();
-   
+   menu_uart_prompt();   
    
    /* Main loop */
    while(1)
@@ -292,7 +291,7 @@ void reset_system_vars()
    tbuf.data = malloc(sizeof(float) * tbuf.size);
    reset_buffer(&tbuf);
 
-   ebuf.size = LBUF_SIZE;
+   ebuf.size = TBUF_SIZE;
    ebuf.data = malloc(sizeof(float) * ebuf.size);
    reset_buffer(&ebuf);
 

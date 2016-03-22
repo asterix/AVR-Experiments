@@ -58,7 +58,7 @@ extern button_list_typ *buttons;
 /* Buffer sizes */
 #define LBUF_SIZE  200
 #define TBUF_SIZE  20
-#define SBUF_SIZE  10
+#define SBUF_SIZE  20
 
 
 /* PID Control */
