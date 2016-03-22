@@ -34,5 +34,9 @@ Kd = 0.2
 ```
 
 ## Question 4
-### Optimal gains
+### Optimal gains (Kp = 0.45, Kd = 0.2)
 ![Optimal gains' response](../lab2/images/4-Opt.png?raw=true)
+### Low gains (Kp = 0.15, Kd = 0.0)
+![Low gains' response](../lab2/images/4-Low.png?raw=true)
+### Very low gains (Kp = 0.03, Kd = 0.0)
+![Low gains' response](../lab2/images/4-VeryLow.png?raw=true)
