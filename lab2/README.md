@@ -30,8 +30,8 @@ t         -> Execute the set trajectory
 l         -> Print system response logs
 ------------------------------------------------------------
 ```
-* Back to back ```r \<num\>``` requests are queued. All of these are executed on ```t``` back to back after PID settling of the previous one. If the system response does not settle, you'll be stuck will oscillations on one of the requests.
-* All ```\<num\>``` values accept floating point real numbers.
+* Back to back ```r <num>``` requests are queued. All of these are executed on ```t``` back to back after PID settling of the previous one. If the system response does not settle, you'll be stuck will oscillations on one of the requests.
+* All ```<num>``` values accept floating point real numbers.
 * The logging buffer holds system response ```(T)``` captures upto 5 seconds after execute ```t``` is hit at ```40Hz``` sampling frequency.
 
 ## Question 1
@@ -73,9 +73,24 @@ High gains with slow feedback loops is the recipe for unstable oscillating syste
 ![3-10Hz High resp](../lab2/images/3-10HzKp1.13Kd1.2.png?raw=true)
 
 ## Question 4
+The specified trajectory can be created and executed using the below input sequence on UART menu.
+```
+r 90
+r 0
+r -360
+r 0
+r 5
+t
+```
+(a) Below are the plots of system response plots for this target sequences. Note that for ```r -360```, the reverse 360 part, the sign is inverted for plotting purposes and even graphing. The log buffer can be dumped by using ```l```.
 ### Optimal gains (Kp = 0.45, Kd = 0.2)
+The best performance is obtained by using the tuned gains as depicted below. Observe that the rising response is linear with damped overshoot and quick settling. Steady state error is almost absent except in the case of ```5°``` where it is within the bounds of ```+/- 0.7°```. This is because zero steady state error cannot be guaranteed without Integral control for this system.
 ![Optimal gains' response](../lab2/images/4-Opt.png?raw=true)
 ### Low gains (Kp = 0.15, Kd = 0.0)
+With low gains the response is slowed down with some non-linear behavior as the target approaches. Steady state error is clearly seen and might be significant for small targets like ```5°```. Settling time is higher as expected.
 ![Low gains' response](../lab2/images/4-Low.png?raw=true)
 ### Very low gains (Kp = 0.03, Kd = 0.0)
+With very low gains the performance of the system deteriorates to a large extent. The response is mostly non-linear everywhere with a large unacceptable steady state error as can be seen below. The response is so bad that for small targets, the system does not even respond.
 ![Low gains' response](../lab2/images/4-VeryLow.png?raw=true)
+
+(c) 
