@@ -29,16 +29,7 @@ Hardware:  ATMega32U4
 #include "usart.h"
 
 
-#define NUM_TASKS 2
-
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
-
-
-typedef enum
-{
-   TSK_FWD = 0,
-   TSK_REV
-} task_name_typ;
 
 
 typedef struct
@@ -87,3 +78,4 @@ void copy_buffer(buffer_typ *t, buffer_typ *s);
 void print_buffer(buffer_typ *b);
 
 #endif /* _MENU_UART_H_ */
+

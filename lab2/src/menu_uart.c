@@ -284,3 +284,4 @@ void print_buffer(buffer_typ *b)
    
    usart_print("--------------------\r\n");
 }
+
