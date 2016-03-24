@@ -62,12 +62,12 @@ int main()
          /* Reset position references */
          motor2.enc_count = 0;
          pid_ctrl.err = dc_motor_degs_to_count(pid_ctrl.pos_ref, motor2.enc_revc);
+      }
 
-         /* Run PID to target */
-         while(!run_pid(&motor2, &pid_ctrl))
-         {
-            _delay_ms(PID_INTERVAL);
-         }
+      /* Run PID to target */
+      while(!run_pid(&motor2, &pid_ctrl))
+      {
+         _delay_ms(PID_INTERVAL);
       }
    }
 
