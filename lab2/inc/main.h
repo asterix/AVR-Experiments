@@ -36,7 +36,7 @@ Note: LFUSE = 0xFF, HFUSE = 0xD0
 extern button_list_typ *buttons;
 
 
-/* Motor chars */
+/* Motor parameters */
 #define MOTOR2_GEAR_RATIO 46.85
 #define MOTOR2_ENC_CPR    48
 #define MOTOR2_ENC_CH_A   PORTB4
@@ -46,38 +46,34 @@ extern button_list_typ *buttons;
 #define MOTOR2_FREQ       20000
 
 /* Absolute response duty cycles */
-#define PWM_DC_MAX        25
-#define PWM_DC_MIN        5
+#define PWM_DC_MAX        60
+#define PWM_DC_MIN        0
+#define PWM_NO_RESP       3
 
 
 #define _busy_wait_ms(x)   for(uint32_t i = 0; i < x; i++) \
                            { __asm__ __volatile("nop":::);}
 
 
-/* Buffer for commands */
-#define CBUF_SIZE  100
-#define CBUF_INVL  0xFF
-
-typedef struct
-{
-   uint8_t data[CBUF_SIZE];
-   uint8_t full;
-   uint8_t ridx;
-   uint8_t widx;
-} buffer_typ;
+/* Buffer sizes */
+#define LBUF_SIZE  200
+#define TBUF_SIZE  20
+#define SBUF_SIZE  20
 
 
-void run_motor(volatile dc_motor_typ *m, motor_dir_typ dir);
+/* PID Control */
+#define PID_INTERVAL 25
 
-void handle_uart_inputs(char* buf, uint8_t* len);
+bool run_pid(volatile dc_motor_typ *m, volatile pid_ctrl_db_typ *pid);
 
-void check_buttons(void);
+void set_pid_params_ref(pid_ctrl_db_typ* npid);
 
-void enqueue_command(volatile buffer_typ *cbuf, uint8_t cmd);
+const pid_ctrl_db_typ* get_pid_params_ref();
 
-uint8_t dequeue_command(volatile buffer_typ *cbuf);
+void pid_log_output(int32_t out);
 
-void reset_cbuffer(volatile buffer_typ *cbuf);
+bool pid_is_settled(buffer_typ *cap);
+
 
 /* Helpers */
 void initialize_local(void);
@@ -91,4 +87,6 @@ void leds_turn_off(void);
 void reset_system_vars(void);
 
 void reset_system_data_default(void);
+
+void check_buttons(void);
 

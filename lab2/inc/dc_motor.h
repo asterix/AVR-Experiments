@@ -35,7 +35,7 @@ typedef enum
 
 typedef struct
 {
-   uint16_t enc_count;
+   int32_t enc_count;
    uint16_t enc_revc;
    level_typ enc_ch_a_stat;
    level_typ enc_ch_b_stat;
@@ -62,6 +62,10 @@ void dc_motor_set_speed(uint8_t dc);
 void dc_motor_reg_speed_fn(void (*fptr)(uint8_t dc));
 
 void dc_motor_dir_calibrate(volatile dc_motor_typ *m);
+
+float dc_motor_count_to_degs(int32_t cnt, uint16_t revc);
+
+int32_t dc_motor_degs_to_count(float deg, uint16_t revc);
 
 
 #endif /* _DC_MOTOR_H_ */

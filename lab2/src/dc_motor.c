@@ -112,7 +112,7 @@ void dc_motor_dir_calibrate(volatile dc_motor_typ *m)
    /* Turn off */
    dc_motor_set_speed(0);
 
-   uint16_t c1 = m->enc_count = 1000;
+   int32_t c1 = m->enc_count = 1000;
 
    /* Set DIR bit, run for a short time */
    *m->dir_port |= m->mask_dir;
@@ -121,7 +121,7 @@ void dc_motor_dir_calibrate(volatile dc_motor_typ *m)
    _delay_ms(500);
    dc_motor_set_speed(0);
 
-   uint16_t c2 = m->enc_count;
+   int32_t c2 = m->enc_count;
 
    /* Decide which way is CW */
    if(c2 > c1)
@@ -138,5 +138,19 @@ void dc_motor_dir_calibrate(volatile dc_motor_typ *m)
    }
 
    m->enc_count = 0;
+}
+
+
+/* Convert encoder counts to degrees */
+float dc_motor_count_to_degs(int32_t cnt, uint16_t revc)
+{
+   return ((float)cnt/revc * 360);
+}
+
+
+/* Convert degrees to encoder counts */
+int32_t dc_motor_degs_to_count(float deg, uint16_t revc)
+{
+   return ((int32_t)(deg/360 * revc));
 }
 

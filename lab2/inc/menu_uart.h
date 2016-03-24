@@ -16,7 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
 Function:  UART based text menu user interface
-Created:   02-Mar-2016
+Created:   16-Mar-2016
 Hardware:  ATMega32U4 
 ---------------------------------------------------------------------------*/
 
@@ -29,21 +29,53 @@ Hardware:  ATMega32U4
 #include "usart.h"
 
 
-#define NUM_TASKS 2
-
 #define WAITING_DIALOGUE "\r\nWaiting for user input... "
 
 
-typedef enum
+typedef struct
 {
-   TSK_FWD = 0,
-   TSK_REV
-} task_name_typ;
+   float kp;
+   float kd;
+   float ki;
+   float err;
+   float pos_ref;
+   float pos_now;
+   float pid_drv;
+} pid_ctrl_db_typ;
 
 
+/* Generic buffer */
+typedef struct
+{
+   float *data;
+   uint8_t full;
+   uint8_t size;
+   uint8_t ridx;
+   uint8_t widx;
+} buffer_typ;
 
-void menu_uart_prompt();
+
+extern void set_pid_params_ref(pid_ctrl_db_typ* npid);
+
+extern const pid_ctrl_db_typ* get_pid_params_ref();
+
+void menu_uart_prompt(void);
 
 void handle_user_inputs(char* buf, uint8_t* len);
 
+void print_all_pid_params(pid_ctrl_db_typ *db);
+
+
+/* Buffer maintenance */
+void enqueue_buffer(buffer_typ *cbuf, float c);
+
+void reset_buffer(buffer_typ *cbuf);
+
+bool dequeue_buffer(buffer_typ *cbuf, float* v);
+
+void copy_buffer(buffer_typ *t, buffer_typ *s);
+
+void print_buffer(buffer_typ *b);
+
 #endif /* _MENU_UART_H_ */
+

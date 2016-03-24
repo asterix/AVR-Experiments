@@ -162,7 +162,7 @@ void timer_3_interrupt_disable(char module);
 
 
 /* Timer 4 */
-bool timer_4_setup_normal(uint16_t delay);
+bool timer_4_setup_normal(float period);
 
 uint16_t timer_4_try_set_clk_divider(double xd);
 
