@@ -6141,7 +6141,7 @@ int main()
     2302:	92 e0       	ldi	r25, 0x02	; 2
     2304:	3b dd       	rcall	.-1418   	; 0x1d7c <dequeue_buffer>
     2306:	88 23       	and	r24, r24
-    2308:	c9 f3       	breq	.-14     	; 0x22fc <main+0x16>
+    2308:	f9 f0       	breq	.+62     	; 0x2348 <main+0x62>
     230a:	10 92 c6 02 	sts	0x02C6, r1
     230e:	10 92 c7 02 	sts	0x02C7, r1
       {
@@ -6166,9 +6166,10 @@ int main()
     234a:	72 e0       	ldi	r23, 0x02	; 2
     234c:	86 ec       	ldi	r24, 0xC6	; 198
     234e:	92 e0       	ldi	r25, 0x02	; 2
+      }
 
-         /* Run PID to target */
-         while(!run_pid(&motor2, &pid_ctrl))
+      /* Run PID to target */
+      while(!run_pid(&motor2, &pid_ctrl))
     2350:	0e 94 cb 02 	call	0x596	; 0x596 <run_pid>
     2354:	81 11       	cpse	r24, r1
     2356:	d2 cf       	rjmp	.-92     	; 0x22fc <main+0x16>
