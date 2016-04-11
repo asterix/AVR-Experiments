@@ -91,11 +91,9 @@ void task_handler::create_print_schedule()
          if(t >= tasks_db.tasks[i]->times_sch * tasks_db.tasks[i]->period
                                               + tasks_db.tasks[i]->offset)
          {
-            // Still in queue? => Missed deadline!
+            // Previous still in queue? => Insert at the end!
             if(std::find(rqueue.begin(), rqueue.end(), tasks_db.tasks[i]) != rqueue.end())
             {
-               missed.push_back(tasks_db.tasks[i]->name + "-"
-                                  + std::to_string(tasks_db.tasks[i]->times_run));
                rqueue.insert(rqueue.end(), tasks_db.tasks[i]);
             }
             else
@@ -137,7 +135,19 @@ void task_handler::create_print_schedule()
       std::cout << "t = " << t;
       if(run_task != nullptr)
       {
-         std::cout << ", task = " << run_task->name << "-" << run_task->times_run;
+         std::string tname = run_task->name + "-" + std::to_string(run_task->times_run);
+
+         // Check if running task missed deadline
+         if(t >= (run_task->times_sch - 1) * run_task->period + run_task->offset
+                                                       + run_task->deadline)
+         {
+            if(std::find(missed.begin(), missed.end(), tname) == missed.end())
+            {
+               missed.push_back(tname);
+            }
+         }
+
+         std::cout << ", task = " << tname;
          
          if(++run_task->exe_time >= run_task->wcet)
          {
