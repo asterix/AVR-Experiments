@@ -1,0 +1,392 @@
+Printing tasks: 
+Task    Period  WCET    Offset  Deadline
+T1      20      4       0       15      
+T2      20      1       5       20      
+T3      30      2       5       30      
+T4      30      1       5       30      
+T5      50      1       10      40      
+T6      50      1       10      40      
+T7      50      2       25      50      
+T8      50      5       25      50      
+Hyper-period = 300
+----- Schedule table -----
+Queued: T1
+t = 0, task = T1-1
+t = 1, task = T1-1
+t = 2, task = T1-1
+t = 3, task = T1-1
+t = 4, task =  *
+Queued: T2
+Queued: T3
+Queued: T4
+t = 5, task = T2-1
+t = 6, task = T3-1
+t = 7, task = T3-1
+t = 8, task = T4-1
+t = 9, task =  *
+Queued: T5
+Queued: T6
+t = 10, task = T5-1
+t = 11, task = T6-1
+t = 12, task =  *
+t = 13, task =  *
+t = 14, task =  *
+t = 15, task =  *
+t = 16, task =  *
+t = 17, task =  *
+t = 18, task =  *
+t = 19, task =  *
+Queued: T1
+t = 20, task = T1-2
+t = 21, task = T1-2
+t = 22, task = T1-2
+t = 23, task = T1-2
+t = 24, task =  *
+Queued: T2
+Queued: T7
+Queued: T8
+t = 25, task = T2-2
+t = 26, task = T7-1
+t = 27, task = T7-1
+t = 28, task = T8-1
+t = 29, task = T8-1
+t = 30, task = T8-1
+t = 31, task = T8-1
+t = 32, task = T8-1
+t = 33, task =  *
+t = 34, task =  *
+Queued: T3
+Queued: T4
+t = 35, task = T3-2
+t = 36, task = T3-2
+t = 37, task = T4-2
+t = 38, task =  *
+t = 39, task =  *
+Queued: T1
+t = 40, task = T1-3
+t = 41, task = T1-3
+t = 42, task = T1-3
+t = 43, task = T1-3
+t = 44, task =  *
+Queued: T2
+t = 45, task = T2-3
+t = 46, task =  *
+t = 47, task =  *
+t = 48, task =  *
+t = 49, task =  *
+t = 50, task =  *
+t = 51, task =  *
+t = 52, task =  *
+t = 53, task =  *
+t = 54, task =  *
+t = 55, task =  *
+t = 56, task =  *
+t = 57, task =  *
+t = 58, task =  *
+t = 59, task =  *
+Queued: T1
+Queued: T5
+Queued: T6
+t = 60, task = T1-4
+t = 61, task = T1-4
+t = 62, task = T1-4
+t = 63, task = T1-4
+t = 64, task = T5-2
+Queued: T2
+Queued: T3
+Queued: T4
+t = 65, task = T2-4
+t = 66, task = T3-3
+t = 67, task = T3-3
+t = 68, task = T4-3
+t = 69, task = T6-2
+t = 70, task =  *
+t = 71, task =  *
+t = 72, task =  *
+t = 73, task =  *
+t = 74, task =  *
+Queued: T7
+Queued: T8
+t = 75, task = T7-2
+t = 76, task = T7-2
+t = 77, task = T8-2
+t = 78, task = T8-2
+t = 79, task = T8-2
+Queued: T1
+t = 80, task = T8-2
+t = 81, task = T8-2
+t = 82, task = T1-5
+t = 83, task = T1-5
+t = 84, task = T1-5
+Queued: T2
+t = 85, task = T1-5
+t = 86, task = T2-5
+t = 87, task =  *
+t = 88, task =  *
+t = 89, task =  *
+t = 90, task =  *
+t = 91, task =  *
+t = 92, task =  *
+t = 93, task =  *
+t = 94, task =  *
+Queued: T3
+Queued: T4
+t = 95, task = T3-4
+t = 96, task = T3-4
+t = 97, task = T4-4
+t = 98, task =  *
+t = 99, task =  *
+Queued: T1
+t = 100, task = T1-6
+t = 101, task = T1-6
+t = 102, task = T1-6
+t = 103, task = T1-6
+t = 104, task =  *
+Queued: T2
+t = 105, task = T2-6
+t = 106, task =  *
+t = 107, task =  *
+t = 108, task =  *
+t = 109, task =  *
+Queued: T5
+Queued: T6
+t = 110, task = T5-3
+t = 111, task = T6-3
+t = 112, task =  *
+t = 113, task =  *
+t = 114, task =  *
+t = 115, task =  *
+t = 116, task =  *
+t = 117, task =  *
+t = 118, task =  *
+t = 119, task =  *
+Queued: T1
+t = 120, task = T1-7
+t = 121, task = T1-7
+t = 122, task = T1-7
+t = 123, task = T1-7
+t = 124, task =  *
+Queued: T2
+Queued: T3
+Queued: T4
+Queued: T7
+Queued: T8
+t = 125, task = T2-7
+t = 126, task = T3-5
+t = 127, task = T3-5
+t = 128, task = T4-5
+t = 129, task = T7-3
+t = 130, task = T7-3
+t = 131, task = T8-3
+t = 132, task = T8-3
+t = 133, task = T8-3
+t = 134, task = T8-3
+t = 135, task = T8-3
+t = 136, task =  *
+t = 137, task =  *
+t = 138, task =  *
+t = 139, task =  *
+Queued: T1
+t = 140, task = T1-8
+t = 141, task = T1-8
+t = 142, task = T1-8
+t = 143, task = T1-8
+t = 144, task =  *
+Queued: T2
+t = 145, task = T2-8
+t = 146, task =  *
+t = 147, task =  *
+t = 148, task =  *
+t = 149, task =  *
+t = 150, task =  *
+t = 151, task =  *
+t = 152, task =  *
+t = 153, task =  *
+t = 154, task =  *
+Queued: T3
+Queued: T4
+t = 155, task = T3-6
+t = 156, task = T3-6
+t = 157, task = T4-6
+t = 158, task =  *
+t = 159, task =  *
+Queued: T1
+Queued: T5
+Queued: T6
+t = 160, task = T1-9
+t = 161, task = T1-9
+t = 162, task = T1-9
+t = 163, task = T1-9
+t = 164, task = T5-4
+Queued: T2
+t = 165, task = T2-9
+t = 166, task = T6-4
+t = 167, task =  *
+t = 168, task =  *
+t = 169, task =  *
+t = 170, task =  *
+t = 171, task =  *
+t = 172, task =  *
+t = 173, task =  *
+t = 174, task =  *
+Queued: T7
+Queued: T8
+t = 175, task = T7-4
+t = 176, task = T7-4
+t = 177, task = T8-4
+t = 178, task = T8-4
+t = 179, task = T8-4
+Queued: T1
+t = 180, task = T8-4
+t = 181, task = T8-4
+t = 182, task = T1-10
+t = 183, task = T1-10
+t = 184, task = T1-10
+Queued: T2
+Queued: T3
+Queued: T4
+t = 185, task = T1-10
+t = 186, task = T2-10
+t = 187, task = T3-7
+t = 188, task = T3-7
+t = 189, task = T4-7
+t = 190, task =  *
+t = 191, task =  *
+t = 192, task =  *
+t = 193, task =  *
+t = 194, task =  *
+t = 195, task =  *
+t = 196, task =  *
+t = 197, task =  *
+t = 198, task =  *
+t = 199, task =  *
+Queued: T1
+t = 200, task = T1-11
+t = 201, task = T1-11
+t = 202, task = T1-11
+t = 203, task = T1-11
+t = 204, task =  *
+Queued: T2
+t = 205, task = T2-11
+t = 206, task =  *
+t = 207, task =  *
+t = 208, task =  *
+t = 209, task =  *
+Queued: T5
+Queued: T6
+t = 210, task = T5-5
+t = 211, task = T6-5
+t = 212, task =  *
+t = 213, task =  *
+t = 214, task =  *
+Queued: T3
+Queued: T4
+t = 215, task = T3-8
+t = 216, task = T3-8
+t = 217, task = T4-8
+t = 218, task =  *
+t = 219, task =  *
+Queued: T1
+t = 220, task = T1-12
+t = 221, task = T1-12
+t = 222, task = T1-12
+t = 223, task = T1-12
+t = 224, task =  *
+Queued: T2
+Queued: T7
+Queued: T8
+t = 225, task = T2-12
+t = 226, task = T7-5
+t = 227, task = T7-5
+t = 228, task = T8-5
+t = 229, task = T8-5
+t = 230, task = T8-5
+t = 231, task = T8-5
+t = 232, task = T8-5
+t = 233, task =  *
+t = 234, task =  *
+t = 235, task =  *
+t = 236, task =  *
+t = 237, task =  *
+t = 238, task =  *
+t = 239, task =  *
+Queued: T1
+t = 240, task = T1-13
+t = 241, task = T1-13
+t = 242, task = T1-13
+t = 243, task = T1-13
+t = 244, task =  *
+Queued: T2
+Queued: T3
+Queued: T4
+t = 245, task = T2-13
+t = 246, task = T3-9
+t = 247, task = T3-9
+t = 248, task = T4-9
+t = 249, task =  *
+t = 250, task =  *
+t = 251, task =  *
+t = 252, task =  *
+t = 253, task =  *
+t = 254, task =  *
+t = 255, task =  *
+t = 256, task =  *
+t = 257, task =  *
+t = 258, task =  *
+t = 259, task =  *
+Queued: T1
+Queued: T5
+Queued: T6
+t = 260, task = T1-14
+t = 261, task = T1-14
+t = 262, task = T1-14
+t = 263, task = T1-14
+t = 264, task = T5-6
+Queued: T2
+t = 265, task = T2-14
+t = 266, task = T6-6
+t = 267, task =  *
+t = 268, task =  *
+t = 269, task =  *
+t = 270, task =  *
+t = 271, task =  *
+t = 272, task =  *
+t = 273, task =  *
+t = 274, task =  *
+Queued: T3
+Queued: T4
+Queued: T7
+Queued: T8
+t = 275, task = T3-10
+t = 276, task = T3-10
+t = 277, task = T4-10
+t = 278, task = T7-6
+t = 279, task = T7-6
+Queued: T1
+t = 280, task = T1-15
+t = 281, task = T1-15
+t = 282, task = T1-15
+t = 283, task = T1-15
+t = 284, task = T8-6
+Queued: T2
+t = 285, task = T8-6
+t = 286, task = T8-6
+t = 287, task = T8-6
+t = 288, task = T8-6
+t = 289, task = T2-15
+t = 290, task =  *
+t = 291, task =  *
+t = 292, task =  *
+t = 293, task =  *
+t = 294, task =  *
+t = 295, task =  *
+t = 296, task =  *
+t = 297, task =  *
+t = 298, task =  *
+t = 299, task =  *
+Queued: T1
+t = 300, task = T1-16
+---- End ----
+----- Missed deadlines -----
+
+---- End ----

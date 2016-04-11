@@ -29,7 +29,7 @@ Created:   10-Apr-2016
 #include <algorithm>
 #include <streambuf>
 #include <iomanip>
-
+#include <string>
 
 
 class task_handler
@@ -43,6 +43,7 @@ public:
       int offset;
       int deadline;
       int times_run;
+      int times_sch;
       int exe_time;
    };
 
@@ -58,10 +59,14 @@ private:
    task_db_typ tasks_db;
    std::ifstream ftasks;
 
+   // Hold missed deadlines
+   std::vector<std::string> missed;
+
    int hyperiod;
 
    // Methods
    void create_print_schedule();
+   void print_missed_deadlines();
    bool parse_tasks(std::string flname);
    void print_tasks();
 

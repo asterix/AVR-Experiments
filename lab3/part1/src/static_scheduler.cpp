@@ -45,12 +45,19 @@ int main(int argc, char **argv)
 // Parse-Compute-Print-Analyze
 bool task_handler::create_print_static_schedule(std::string flname)
 {
+   // Read tasks' list
    bool result = this->parse_tasks(flname);
 
    if(result)
    {
+      // Print tasks' table
       this->print_tasks();
+
+      // Generate & print schedule
       this->create_print_schedule();
+
+      // Print missed deadlines
+      this->print_missed_deadlines();
    }
 
    return result;
@@ -76,25 +83,28 @@ void task_handler::create_print_schedule()
    std::cout << "----- Schedule table -----" << std::endl;
 
    // Simulate one hyper-period
-   while(t < hyperiod)
+   while(t <= hyperiod)
    {
       // Any task ready? => add to queue
       for(int i = 0; i < tasks_db.num_tasks; i++)
       {
-         if(t >= tasks_db.tasks[i]->times_run * tasks_db.tasks[i]->period
+         if(t >= tasks_db.tasks[i]->times_sch * tasks_db.tasks[i]->period
                                               + tasks_db.tasks[i]->offset)
          {
             // Still in queue? => Missed deadline!
             if(std::find(rqueue.begin(), rqueue.end(), tasks_db.tasks[i]) != rqueue.end())
             {
-               std::cout << "Missed deadline: " << tasks_db.tasks[i]->name << std::endl;
+               missed.push_back(tasks_db.tasks[i]->name + "-"
+                                  + std::to_string(tasks_db.tasks[i]->times_run));
+               rqueue.insert(rqueue.end(), tasks_db.tasks[i]);
             }
             else
             {
                rqueue.push_back(tasks_db.tasks[i]);
-               tasks_db.tasks[i]->times_run++;
-               std::cout << "Queued: " << tasks_db.tasks[i]->name << std::endl;
             }
+
+            tasks_db.tasks[i]->times_sch++;
+            std::cout << "Queued: " << tasks_db.tasks[i]->name << std::endl;
          }
       }
 
@@ -118,6 +128,7 @@ void task_handler::create_print_schedule()
 
             // Mark running
             running = true;
+            run_task->times_run++;
             run_task->exe_time = 0;
          }
       }
@@ -142,6 +153,21 @@ void task_handler::create_print_schedule()
       std::cout << std::endl;
       ++t;
    }
+
+   std::cout << "---- End ----" << std::endl;
+}
+
+
+// Print missed deadlines
+void task_handler::print_missed_deadlines()
+{
+   std::vector<std::string>::iterator it;
+   std::cout << "----- Missed deadlines -----" << std::endl;
+   for(it = missed.begin(); it != missed.end(); it++)
+   {
+      std::cout << *it << ", ";
+   }
+   std::cout << std::endl << "---- End ----" << std::endl;
 }
 
 
@@ -207,6 +233,7 @@ bool task_handler::parse_tasks(std::string flname)
          tasks_db.tasks[i] = new task_typ;
          tasks_db.tasks[i]->name = "T"+ std::to_string(i+1);
          tasks_db.tasks[i]->times_run = 0;
+         tasks_db.tasks[i]->times_sch = 0;
          ftasks >> tasks_db.tasks[i]->period >> tasks_db.tasks[i]->wcet
                 >> tasks_db.tasks[i]->offset >> tasks_db.tasks[i]->deadline;
       }
