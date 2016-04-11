@@ -42,6 +42,7 @@ int main(int argc, char **argv)
 }
 
 
+// Parse-Compute-Print-Analyze
 bool task_handler::create_print_static_schedule(std::string flname)
 {
    bool result = this->parse_tasks(flname);
@@ -56,17 +57,95 @@ bool task_handler::create_print_static_schedule(std::string flname)
 }
 
 
+// Job runner
 void task_handler::create_print_schedule()
 {
    // Computer hyper-period
    this->update_hyperiod();
    std::cout << "Hyper-period = " << hyperiod << std::endl;
 
-   
+   // Queue for ready tasks
+   std::vector<task_typ*> rqueue;
+   std::vector<task_typ*>::iterator it;
+   task_typ *run_task = nullptr;
 
+   // Start timing
+   int t = 0;
+   bool running = false;
+
+   std::cout << "----- Schedule table -----" << std::endl;
+
+   // Simulate one hyper-period
+   while(t < hyperiod)
+   {
+      // Any task ready? => add to queue
+      for(int i = 0; i < tasks_db.num_tasks; i++)
+      {
+         if(t >= tasks_db.tasks[i]->times_run * tasks_db.tasks[i]->period
+                                              + tasks_db.tasks[i]->offset)
+         {
+            // Still in queue? => Missed deadline!
+            if(std::find(rqueue.begin(), rqueue.end(), tasks_db.tasks[i]) != rqueue.end())
+            {
+               std::cout << "Missed deadline: " << tasks_db.tasks[i]->name << std::endl;
+            }
+            else
+            {
+               rqueue.push_back(tasks_db.tasks[i]);
+               tasks_db.tasks[i]->times_run++;
+               std::cout << "Queued: " << tasks_db.tasks[i]->name << std::endl;
+            }
+         }
+      }
+
+      // Analyze the highest priority task
+      if(!running)
+      {
+         if(rqueue.empty())
+         {
+            run_task = nullptr;
+         }
+         else
+         {
+            run_task = rqueue.at(0);
+            for(it = rqueue.begin(); it != rqueue.end(); it++)
+            {
+               if((*it)->deadline < run_task->deadline)
+               {
+                  run_task = *it;
+               }
+            }
+
+            // Mark running
+            running = true;
+            run_task->exe_time = 0;
+         }
+      }
+      
+      // Run the scheduled task non-preemptively
+      std::cout << "t = " << t;
+      if(run_task != nullptr)
+      {
+         std::cout << ", task = " << run_task->name << "-" << run_task->times_run;
+         
+         if(++run_task->exe_time >= run_task->wcet)
+         {
+            rqueue.erase(std::find(rqueue.begin(), rqueue.end(), run_task));
+            running = false;
+         }
+      }
+      else
+      {
+         std::cout << ", task =  *";
+      }
+      
+      std::cout << std::endl;
+      ++t;
+   }
 }
 
 
+// Hyper period computation
 void task_handler::update_hyperiod()
 {
    std::vector<int> per;
@@ -81,16 +160,17 @@ void task_handler::update_hyperiod()
 }
 
 
+// Simple LCM
 int task_handler::lcm(int a, int b)
 {
-   return (a*b)/gcd(a,b);
+   return (a * b)/gcd(a, b);
 }
 
 
+// Simple GCD
 int task_handler::gcd(int a, int b)
 {
-   int r;
-   a = std::abs(a); b = std::abs(b);
+   int r; a = std::abs(a); b = std::abs(b);
    while(b != 0)
    {
       r = b;
@@ -101,6 +181,7 @@ int task_handler::gcd(int a, int b)
 }
 
 
+// File parser
 bool task_handler::parse_tasks(std::string flname)
 {
    bool res = true;
@@ -125,6 +206,7 @@ bool task_handler::parse_tasks(std::string flname)
       {
          tasks_db.tasks[i] = new task_typ;
          tasks_db.tasks[i]->name = "T"+ std::to_string(i+1);
+         tasks_db.tasks[i]->times_run = 0;
          ftasks >> tasks_db.tasks[i]->period >> tasks_db.tasks[i]->wcet
                 >> tasks_db.tasks[i]->offset >> tasks_db.tasks[i]->deadline;
       }

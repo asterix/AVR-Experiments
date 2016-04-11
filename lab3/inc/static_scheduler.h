@@ -42,6 +42,8 @@ public:
       int wcet;
       int offset;
       int deadline;
+      int times_run;
+      int exe_time;
    };
 
    struct task_db_typ
@@ -52,11 +54,11 @@ public:
 
 private:
 
+   // Data
    task_db_typ tasks_db;
    std::ifstream ftasks;
 
    int hyperiod;
-
 
    // Methods
    void create_print_schedule();
