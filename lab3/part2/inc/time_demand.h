@@ -31,6 +31,7 @@ Created:   11-Apr-2016
 #include <iomanip>
 #include <string>
 
+#define FLT_TOLERANCE 0.0001f
 
 class time_demand_analyzer
 {
@@ -46,16 +47,10 @@ public:
       float cntxtsw;
    };
 
-   struct task_db_typ
-   {
-      int num_tasks;
-      task_typ **tasks;
-   };
-
 private:
 
    // Data
-   task_db_typ tasks_db;
+   std::vector<task_typ> tskdb;
    std::ifstream ftasks;
 
    // Hold missed deadlines
@@ -64,25 +59,18 @@ private:
    // Methods
    bool parse_tasks(std::string flname);
    void print_tasks();
+   void compute_resp_times();
 
 public:
 
    time_demand_analyzer()
    {
-      tasks_db.num_tasks = 0;
-      tasks_db.tasks = nullptr;
+      tskdb.clear();
    }
 
    ~time_demand_analyzer()
    {
-      if(tasks_db.tasks != nullptr)
-      {
-         for(int i = 0; i < tasks_db.num_tasks; i++)
-         {
-            delete tasks_db.tasks[i];
-         }
-         delete tasks_db.tasks;
-      }
+      tskdb.clear();
    }
 
    bool analyze_task_set(std::string flname);

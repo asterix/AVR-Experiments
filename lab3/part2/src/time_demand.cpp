@@ -49,9 +49,64 @@ bool time_demand_analyzer::analyze_task_set(std::string flname)
    if(res)
    {
       this->print_tasks();
+      this->compute_resp_times();
    }
 
    return res;
+}
+
+
+void time_demand_analyzer::compute_resp_times()
+{
+   // Rearrange tasks by deadline monotonic priorities
+   std::sort(tskdb.begin(), tskdb.end(),
+             [](const task_typ &a, const task_typ &b)-> bool
+               {return (a.deadline < b.deadline);});
+
+   // Prologue
+   std::cout << std::endl << "----- response times -----" << std::endl;
+
+   // Response times
+   std::vector<task_typ>::iterator it, ith, itl;
+   for(it = tskdb.begin(); it != tskdb.end(); it++)
+   {
+      float response = it->wcet;
+      float t;
+
+      do
+      {
+         // For all higher priority tasks
+         t = response;
+         response = it->wcet;
+         
+         for(ith = tskdb.begin(); ith != it; ith++)
+         {
+            response += ceil(t/ith->period) * ith->wcet;
+         }
+
+         // For all lower priority tasks
+         for(itl = it; itl != tskdb.end(); itl++)
+         {
+
+         }
+
+         // Past deadline? => Failed schedulability test
+         if(response > it->deadline)
+         {
+            break;
+         }
+      } while(t < response);
+
+      std::cout << "W(" << it->name << ") = " << response << " ";
+      if(response > it->deadline)
+      {
+         std::cout << "| " << it->name << " missed deadline";
+      }
+      std::cout << std::endl;
+   }
+
+   // Epilogue
+   std::cout << "----- end -----" << std::endl;
 }
 
 
@@ -68,9 +123,6 @@ bool time_demand_analyzer::parse_tasks(std::string flname)
       num_lines = std::count(std::istreambuf_iterator<char>(ftasks),
                              std::istreambuf_iterator<char>(), '\n');
 
-      tasks_db.num_tasks = num_lines;
-      tasks_db.tasks = new task_typ*[num_lines];
-
       // Back to beginning
       ftasks.clear();
       ftasks.seekg(0, std::ios::beg);
@@ -78,11 +130,13 @@ bool time_demand_analyzer::parse_tasks(std::string flname)
       // Read and store each tasks' parameters
       for(int i = 0; i < num_lines; i++)
       {
-         tasks_db.tasks[i] = new task_typ;
-         tasks_db.tasks[i]->name = "T"+ std::to_string(i+1);
-         ftasks >> tasks_db.tasks[i]->period >> tasks_db.tasks[i]->wcet
-                >> tasks_db.tasks[i]->deadline >> tasks_db.tasks[i]->selfsusp
-                >> tasks_db.tasks[i]->blocking >> tasks_db.tasks[i]->cntxtsw;
+         task_typ tsk;
+         tsk.name = "T"+ std::to_string(i + 1);
+         ftasks >> tsk.period >> tsk.wcet >> tsk.deadline
+                >> tsk.selfsusp >> tsk.blocking >> tsk.cntxtsw;
+
+         // Store the task in a container
+         tskdb.push_back(tsk);
       }
    }
    else
@@ -108,15 +162,16 @@ void time_demand_analyzer::print_tasks()
              << std::setw(width) << std::left << "Blocking"
              << std::setw(width) << std::left << "Context-Switch" << std::endl;
 
-   for(int i = 0; i < tasks_db.num_tasks; i++)
+   std::vector<task_typ>::iterator it;
+   for(it = tskdb.begin(); it != tskdb.end(); it++)
    {
-      std::cout << std::setw(width) << std::left << tasks_db.tasks[i]->name
-                << std::setw(width) << std::left << tasks_db.tasks[i]->period
-                << std::setw(width) << std::left << tasks_db.tasks[i]->wcet
-                << std::setw(width) << std::left << tasks_db.tasks[i]->deadline
-                << std::setw(width) << std::left << tasks_db.tasks[i]->selfsusp 
-                << std::setw(width) << std::left << tasks_db.tasks[i]->blocking
-                << std::setw(width) << std::left << tasks_db.tasks[i]->cntxtsw << std::endl;
+      std::cout << std::setw(width) << std::left << it->name
+                << std::setw(width) << std::left << it->period
+                << std::setw(width) << std::left << it->wcet
+                << std::setw(width) << std::left << it->deadline
+                << std::setw(width) << std::left << it->selfsusp 
+                << std::setw(width) << std::left << it->blocking
+                << std::setw(width) << std::left << it->cntxtsw << std::endl;
    }
 }
 
