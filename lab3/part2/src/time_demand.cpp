@@ -58,11 +58,6 @@ bool time_demand_analyzer::analyze_task_set(std::string flname)
 
 void time_demand_analyzer::compute_resp_times()
 {
-   // Rearrange tasks by deadline monotonic priorities
-   std::sort(tskdb.begin(), tskdb.end(),
-             [](const task_typ &a, const task_typ &b)-> bool
-               {return (a.deadline < b.deadline);});
-
    // Prologue
    std::cout << std::endl << "----- response times -----" << std::endl;
 
@@ -70,24 +65,23 @@ void time_demand_analyzer::compute_resp_times()
    std::vector<task_typ>::iterator it, ith, itl;
    for(it = tskdb.begin(); it != tskdb.end(); it++)
    {
-      float response = it->wcet;
-      float t;
+      float response = 0, t = 0;
+
+      // Minimum response time = SUM(exe times of self + higher priority tasks)
+      for(ith = tskdb.begin(); ith <= it; ith++)
+      {
+         response += (ith->wcet + 2 * it->cntxtsw);
+      }
 
       do
       {
          // For all higher priority tasks
          t = response;
-         response = it->wcet;
+         response = it->wcet + 2 * it->cntxtsw + it->blocking;
          
          for(ith = tskdb.begin(); ith != it; ith++)
          {
-            response += ceil(t/ith->period) * ith->wcet;
-         }
-
-         // For all lower priority tasks
-         for(itl = it; itl != tskdb.end(); itl++)
-         {
-
+            response += ceil(t/ith->period) * (ith->wcet + 2 * it->cntxtsw);
          }
 
          // Past deadline? => Failed schedulability test
@@ -95,9 +89,11 @@ void time_demand_analyzer::compute_resp_times()
          {
             break;
          }
+         
       } while(t < response);
 
-      std::cout << "W(" << it->name << ") = " << response << " ";
+      // Print response time
+      std::cout << "W(" << it->name << ") = " << response << "\t";
       if(response > it->deadline)
       {
          std::cout << "| " << it->name << " missed deadline";
@@ -107,6 +103,47 @@ void time_demand_analyzer::compute_resp_times()
 
    // Epilogue
    std::cout << "----- end -----" << std::endl;
+}
+
+
+// Update - Self-suspension time, Blocking times of all tasks
+void time_demand_analyzer::update_blocking_times()
+{
+   std::vector<task_typ>::iterator it, ith, itl;
+
+   // Sort tasks by deadline monotonic priorities
+   std::sort(tskdb.begin(), tskdb.end(), [](const task_typ &a, const task_typ &b)-> bool
+                                           {return (a.deadline < b.deadline);});
+
+   // Add 2 x context-switch time to non-preempt times
+   for(it = tskdb.begin(); it != tskdb.end(); it++)
+   {
+      it->nonpreempt += it->cntxtsw * 2;
+   }
+
+   // Compute blocking times
+   for(it = tskdb.begin(); it != tskdb.end(); it++)
+   {
+      // Compute & update self-suspension times
+      for(ith = tskdb.begin(); ith != it; ith++)
+      {
+         // All are max self-susp durations
+         it->selfsusp += ith->selfsusp;
+      }
+
+      // Max non-preemptable section of lower prio tasks
+      it->nonpreempt = 0;
+      for(itl = it + 1; itl != tskdb.end(); itl++)
+      {
+         if(itl->nonpreempt > it->nonpreempt)
+         {
+            it->nonpreempt = itl->nonpreempt;
+         }
+      }
+
+      // Blocking = Self-suspension + (No. of Self-susp + 1) Non-preemptable
+      it->blocking = it->selfsusp + (it->num_selfsusp + 1) * it->nonpreempt;
+   }  
 }
 
 
@@ -131,13 +168,21 @@ bool time_demand_analyzer::parse_tasks(std::string flname)
       for(int i = 0; i < num_lines; i++)
       {
          task_typ tsk;
+
+         // Basic init
          tsk.name = "T"+ std::to_string(i + 1);
+         tsk.blocking = 0;
+
+         // Read from file
          ftasks >> tsk.period >> tsk.wcet >> tsk.deadline
-                >> tsk.selfsusp >> tsk.blocking >> tsk.cntxtsw;
+                >> tsk.selfsusp >> tsk.num_selfsusp >> tsk.nonpreempt >> tsk.cntxtsw;
 
          // Store the task in a container
          tskdb.push_back(tsk);
       }
+
+      // Compute and update blocking times
+      this->update_blocking_times();
    }
    else
    {
@@ -152,26 +197,29 @@ bool time_demand_analyzer::parse_tasks(std::string flname)
 // Print parsed tasks + parameters
 void time_demand_analyzer::print_tasks()
 {
-   int width = 12;
    std::cout << "Printing tasks: " << std::endl;
-   std::cout << std::setw(width) << std::left << "Task" 
-             << std::setw(width) << std::left << "Period"
-             << std::setw(width) << std::left << "WCET"
-             << std::setw(width) << std::left << "Deadline"
-             << std::setw(width) << std::left << "Self-Susp" 
-             << std::setw(width) << std::left << "Blocking"
-             << std::setw(width) << std::left << "Context-Switch" << std::endl;
+   std::cout << std::setw(6) << std::left << "Task" 
+             << std::setw(8) << std::left << "Period"
+             << std::setw(6) << std::left << "WCET"
+             << std::setw(10) << std::left << "Deadline"
+             << std::setw(11) << std::left << "Self-Susp" 
+             << std::setw(13) << std::left << "#Self-Susp" 
+             << std::setw(13) << std::left << "Non-Preempt" 
+             << std::setw(10) << std::left << "Blocking"
+             << std::setw(14) << std::left << "Context-Switch" << std::endl;
 
    std::vector<task_typ>::iterator it;
    for(it = tskdb.begin(); it != tskdb.end(); it++)
    {
-      std::cout << std::setw(width) << std::left << it->name
-                << std::setw(width) << std::left << it->period
-                << std::setw(width) << std::left << it->wcet
-                << std::setw(width) << std::left << it->deadline
-                << std::setw(width) << std::left << it->selfsusp 
-                << std::setw(width) << std::left << it->blocking
-                << std::setw(width) << std::left << it->cntxtsw << std::endl;
+      std::cout << std::setw(6) << std::left << it->name
+                << std::setw(8) << std::left << it->period
+                << std::setw(6) << std::left << it->wcet
+                << std::setw(10) << std::left << it->deadline
+                << std::setw(11) << std::left << it->selfsusp 
+                << std::setw(13) << std::left << it->num_selfsusp
+                << std::setw(13) << std::left << it->nonpreempt 
+                << std::setw(10) << std::left << it->blocking
+                << std::setw(14) << std::left << it->cntxtsw << std::endl;
    }
 }
 

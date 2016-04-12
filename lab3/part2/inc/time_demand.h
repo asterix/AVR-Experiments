@@ -43,6 +43,8 @@ public:
       float wcet;
       float deadline;
       float selfsusp;
+      int num_selfsusp;
+      float nonpreempt;
       float blocking;
       float cntxtsw;
    };
@@ -60,6 +62,7 @@ private:
    bool parse_tasks(std::string flname);
    void print_tasks();
    void compute_resp_times();
+   void update_blocking_times();
 
 public:
 
