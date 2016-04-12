@@ -12,11 +12,11 @@ LPATHS  =
 LDFLAGS =
 
 ## Target ##
-TARGET  = static_scheduler
+TARGET  = time_demand
 VPATH   = src
 
 ## Sources ##
-SRCS    = static_scheduler.cpp
+SRCS    = time_demand.cpp
 
 OBJS    = $(addprefix $(OBJ)/,$(subst .cpp,.o,$(SRCS)))
 
@@ -33,5 +33,5 @@ $(OBJ)/%.o:$(SRC)/%.cpp
 
 
 clean:
-	rm -f ./obj/*.o *.a *.obj static_scheduler
+	rm -f ./obj/*.o *.a *.obj time_demand
 

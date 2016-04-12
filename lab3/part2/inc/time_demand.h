@@ -15,12 +15,12 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -----------------------------------------------------------------------------
-Function:  Static scheduling tool
-Created:   10-Apr-2016
+Function:  Time demand analysis tool
+Created:   11-Apr-2016
 ---------------------------------------------------------------------------*/
 
-#ifndef _STATIC_SCHEDULER_H_
-#define _STATIC_SCHEDULER_H_
+#ifndef _TIME_DEMAND_H_
+#define _TIME_DEMAND_H_
 
 #include <iostream>
 #include <fstream>
@@ -32,19 +32,18 @@ Created:   10-Apr-2016
 #include <string>
 
 
-class task_handler
+class time_demand_analyzer
 {
 public:
    struct task_typ
    {
       std::string name;
-      int period;
-      int wcet;
-      int offset;
-      int deadline;
-      int times_run;
-      int times_sch;
-      int exe_time;
+      float period;
+      float wcet;
+      float deadline;
+      float selfsusp;
+      float blocking;
+      float cntxtsw;
    };
 
    struct task_db_typ
@@ -62,40 +61,34 @@ private:
    // Hold missed deadlines
    std::vector<std::string> missed;
 
-   int hyperiod;
-
    // Methods
-   void create_print_schedule();
-   void print_missed_deadlines();
    bool parse_tasks(std::string flname);
    void print_tasks();
 
-   int lcm(int a, int b);
-   int gcd(int a, int b);
-   void update_hyperiod();
-
-
 public:
 
-   task_handler()
+   time_demand_analyzer()
    {
       tasks_db.num_tasks = 0;
+      tasks_db.tasks = nullptr;
    }
 
-   ~task_handler()
+   ~time_demand_analyzer()
    {
-      for(int i = 0; i < tasks_db.num_tasks; i++)
+      if(tasks_db.tasks != nullptr)
       {
-         delete tasks_db.tasks[i];
+         for(int i = 0; i < tasks_db.num_tasks; i++)
+         {
+            delete tasks_db.tasks[i];
+         }
+         delete tasks_db.tasks;
       }
-      
-      delete tasks_db.tasks;
    }
 
-   bool create_print_static_schedule(std::string flname);
+   bool analyze_task_set(std::string flname);
 
 };
 
 
-#endif // _STATIC_SCHEDULER_H_
+#endif // _TIME_DEMAND_H_
 
