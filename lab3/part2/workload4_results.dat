@@ -1,0 +1,11 @@
+Printing tasks: 
+Task  Period  WCET  Deadline  Self-Susp  #Self-Susp   Non-Preempt  Blocking  Context-Switch
+T1    25      8     25        0          0            2            2         0             
+T2    50      13    50        0          0            2            2         0             
+T3    100     40    100       0          0            0            0         0             
+
+----- response times -----
+W(T1) = 10	
+W(T2) = 23	
+W(T3) = 98	
+----- end -----
