@@ -20,7 +20,9 @@ Created:   23-Apr-2016
 
 
 // Font store
-fontizer fz("./bdf-fonts/9x15B.bdf");
+static fontizer fz("./bdf-fonts/9x15B.bdf");
+static color_buffer clrbuf;
+static int xscroll = 0;
 
 
 
@@ -35,6 +37,12 @@ int main(int argc, char *arg[])
 
    mtrx.stop();
 
+   // Delete the old file
+   if(remove(UPDATEPATH) != 0)
+   {
+      LOG_ERROR("Could not delete: "+ std::string(UPDATEPATH));
+   }
+
    return 0;
 }
 
@@ -42,20 +50,65 @@ int main(int argc, char *arg[])
 // Your coloring algorithm goes here
 bool what::playground()
 {
-   static bool fresh = true;
-   static color_buffer clrbuf;
-   static uint32_t xscroll = 0;
-   
-   // Set text colors
-   pixel fore;
-   fore.r = 238; fore.g = 154; fore.b = 0;
-   pixel back;
-   back.r = back.g = back.b = 0;
+   // Get background color
+   static pixel backclr;
 
-   std::string sample = "Isn't this so the coolest thing on this planet? :)   ";
+   // Update frame buffer
+   check_update_display_buffer(height_, &backclr);
+
+   pixel* scroll_ptr = clrbuf.pix + xscroll;
+
+   // Load into frame-buffer
+   for(uint32_t y = 0; y < height_; y++)
+   {
+      uint32_t col = y * clrbuf.length;
+      for(uint32_t x = 0; x < length_; x++)
+      {
+         if(x < clrbuf.length && y < clrbuf.height)
+         {
+            set_pixel(x, y, scroll_ptr[col + x].r,
+                            scroll_ptr[col + x].g,
+                            scroll_ptr[col + x].b);
+         }
+         else
+         {
+            set_pixel(x, y, backclr.r,
+                            backclr.g,
+                            backclr.b);
+         }
+      }
+   }
+
+   // Progressive scrolling
+   xscroll++;
+   if(xscroll >= (static_cast<int>(clrbuf.length) - static_cast<int>(length_)))
+   {
+      xscroll = 0;
+   }
+
+
+   usleep(50 * 1000);
+   return true;
+}
+
+
+// Check for new data and updates the display buffer
+void check_update_display_buffer(uint32_t height, pixel* back)
+{
+   bool fresh = check_fresh_data(FRESHPATH);
 
    if(fresh)
    {
+      std::ifstream updatefile(UPDATEPATH, std::ifstream::in);
+
+      // Get text
+      std::string sample = get_rgbtextbox(updatefile);
+   
+      // Get colors
+      pixel fore;
+      get_color(FOREGROUND, &fore, updatefile);
+      get_color(BACKGROUND, back, updatefile);
+
       // Determine color buffer size
       int fboxw, fboxh;
       fz.get_font_properties(fboxw, fboxh);
@@ -65,7 +118,7 @@ bool what::playground()
    
       // Set color buffer params
       clrbuf.length = fboxw * sample.size();
-      clrbuf.height = height_;
+      clrbuf.height = fboxh;
       clrbuf.depth = 8;
    
       // Allocate pixel memory
@@ -76,46 +129,137 @@ bool what::playground()
    
       for(size_t i = 0; i < sample.size(); i++)
       {
-         xcursor += fz.draw(&clrbuf, xcursor, 0, &fore, &back, sample[i]);
+         xcursor += fz.draw(&clrbuf, xcursor, 0, &fore, back, sample[i]);
       }
 
-      fresh = false;
-   }
-
-   pixel* scroll_ptr = clrbuf.pix + xscroll;
-
-   // Load into frame-buffer
-   for(uint32_t y = 0; y < height_; y++)
-   {
-      uint32_t col = y * clrbuf.length;
-      for(uint32_t x = 0; x < length_; x++)
-      {
-         if(x < clrbuf.length)
-         {
-            set_pixel(x, y, scroll_ptr[col + x].r,
-                            scroll_ptr[col + x].g,
-                            scroll_ptr[col + x].b);
-         }
-         else
-         {
-            set_pixel(x, y, 0, 0, 0);
-         }
-      }
-   }
-
-   // Progressive scrolling
-   if(xscroll >= (clrbuf.length - length_))
-   {
       xscroll = 0;
    }
-   else
+}
+
+
+// Check for fresh.txt file
+bool check_fresh_data(std::string freshpath)
+{
+   bool result = false;
+   std::ifstream freshfile(freshpath.c_str(), std::ifstream::in);
+
+   if(freshfile.is_open())
    {
-      xscroll++;
+      result = true;
+      freshfile.close();
+
+      // Delete this file
+      if(remove(freshpath.c_str()) != 0)
+      {
+         LOG_ERROR("Could not delete: "+freshpath);
+      }
+   }
+   
+   return result;
+}
+
+
+
+
+// Get received text
+std::string get_rgbtextbox(std::ifstream& sspace)
+{
+   std::string text = "", temp;
+   std::string keyword;
+   sspace.clear();
+   sspace.seekg(0, std::ios::beg);
+
+   while(sspace >> keyword)
+   {
+      if(keyword == STARTFIELD)
+      {
+         sspace >> keyword;
+         if(keyword == TAGTEXT)
+         {
+            while(sspace >> temp)
+            {
+               if(temp != STARTFIELD)
+               {
+                  // Automatically strips newlines
+                  text += temp + " ";
+               }
+               else
+               {
+                  break;
+               }
+            }
+         }
+      }
    }
 
-   usleep(50 * 1000);
-   return true;
+   return text;
 }
+
+
+// Get received color settings
+void get_color(colorsetting set, pixel* pix, std::ifstream& sspace)
+{
+   std::string tag;
+   
+   // Set default text colors
+   switch(set)
+   {
+      case FOREGROUND: 
+         tag = TAGFORECLR;
+         pix->r = 238; pix->g = 154; pix->b = 0;
+         break;
+      case BACKGROUND:
+      default:
+         tag = TAGBACKCLR;
+         pix->r = pix->g = pix->b = 0;
+   }
+
+   // Find tag
+   std::string clr = "";
+   std::string keyword;
+   sspace.clear();
+   sspace.seekg(0, std::ios::beg);
+
+   while(sspace >> keyword)
+   {
+      if(keyword == STARTFIELD)
+      {
+         sspace >> keyword;
+         if(keyword == tag)
+         {
+            sspace >> clr;
+         }
+      }
+   }
+
+   // Convert string to RGB
+   if(clr.size() == 7)
+   {
+      pix->r = std::stoi(clr.substr(1, 2), nullptr, 16);
+      pix->g = std::stoi(clr.substr(3, 2), nullptr, 16);
+      pix->b = std::stoi(clr.substr(5, 2), nullptr, 16);
+   } 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

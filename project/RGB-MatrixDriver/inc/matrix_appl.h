@@ -35,6 +35,29 @@ Created:   23-Apr-2016
 #define NUM_CHAINED  3
 #define COLOR_DEPTH  8
 
+#define FRESHPATH    "/var/www/html/rgbdisplay/fresh.txt"
+#define UPDATEPATH   "/var/www/html/rgbdisplay/postdata.txt"
+#define STARTFIELD   "##!"
+#define TAGTEXT      "rgbtextbox"
+#define TAGFORECLR   "forecolor"
+#define TAGBACKCLR   "backcolor"
+
+
+enum colorsetting
+{
+   FOREGROUND = 0,
+   BACKGROUND
+};
+
+
+// Function prototypes
+void check_update_display_buffer(uint32_t height, pixel* backclr);
+
+bool check_fresh_data(std::string freshpath);
+
+void get_color(colorsetting set, pixel* pix, std::ifstream& sspace);
+
+std::string get_rgbtextbox(std::ifstream& sspace);
 
 
 #endif // _MATRIX_APPL_H_
