@@ -103,6 +103,7 @@ void check_update_display_buffer(uint32_t height, pixel* back)
 
       // Get text
       std::string sample = get_rgbtextbox(updatefile);
+      sample = "    " + sample + "    ";
    
       // Get colors
       pixel fore;
