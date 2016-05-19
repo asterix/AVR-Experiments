@@ -57,13 +57,13 @@ My default PID controller frequency is ```40Hz``` for quick response during high
 ### PID controller frequency = 40Hz
 #### Optimal gains (Kp = 0.45, Kd = 0.2)
 This is the best and the fastest response. 
-![3 Opt resp](../lab2/images/3-Opt.png?raw=true)
+![3 Opt resp](./images/3-Opt.png?raw=true)
 #### Low gains (Kp = 0.15, Kd = 0.0)
 On low gains, the response lags behind hence taking a long time to settle. Also to be observed is the slightly higher steady state error and no overshoot.
-![3 Low resp](../lab2/images/3-LowKp0.15.png?raw=true)
+![3 Low resp](./images/3-LowKp0.15.png?raw=true)
 #### High gains (Kp = 1.13, Kd = 1.2)
 High gains cause oscillations as expected. However, the oscillations gradually die out. Again settling takes longer because of the oscillations. The steady state error is however lower than when that for low gains.
-![3 High resp](../lab2/images/3-HighKp1.13Kd1.2.png?raw=true)
+![3 High resp](./images/3-HighKp1.13Kd1.2.png?raw=true)
 
 
 ## Custom trials
